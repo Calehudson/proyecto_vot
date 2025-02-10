@@ -1,4 +1,4 @@
-# ADR 0003: Uso de MySQL como Base de Datos
+# ADR 0004: Uso de MySQL como Base de Datos
 
 ## Contexto
 Para el sistema de votación, se evaluaron varias opciones de bases de datos. La selección de la base de datos debe garantizar **rendimiento, estabilidad y compatibilidad** con la infraestructura establecida. 
@@ -46,4 +46,4 @@ Se utilizará **MySQL** como base de datos principal para el sistema de votació
 ---
 
 📌 **Ubicación del archivo en GitHub:**  
-📂 `docs/adr/0003-uso-de-mysql.md`
+📂 `docs/adr/0004-uso-de-mysql.md`
