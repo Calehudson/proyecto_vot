@@ -8,11 +8,11 @@ Usaremos una arquitectura monolítica para desarrollar el sistema de votación, 
 
 ## Opciones Consideradas
 
-### 1️⃣ **Microservicios**
+### 1. **Microservicios**
 ✅ Modularización y escalabilidad independiente.  
 ❌ Mayor complejidad en despliegue y mantenimiento.  
 
-### 2️⃣ **Arquitectura Monolítica (Decisión Final)**
+### 2. **Arquitectura Monolítica (Decisión Final)**
 ✅ Simplicidad en desarrollo y mantenimiento.  
 ✅ Despliegue más fácil y rápido.  
 ✅ Menos sobrecarga operativa.  
