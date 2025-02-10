@@ -1,4 +1,4 @@
-# ADR 0002: Uso de Arquitectura Monolítica
+# ADR 0005: Uso de Arquitectura Monolítica
 
 ## Contexto
 Inicialmente, se consideró la posibilidad de utilizar una arquitectura basada en microservicios. Sin embargo, debido a la simplicidad del proyecto y la necesidad de minimizar la sobrecarga operativa, se optó por una arquitectura monolítica.
