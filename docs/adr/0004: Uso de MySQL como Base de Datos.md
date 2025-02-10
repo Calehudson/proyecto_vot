@@ -10,17 +10,17 @@ Se utilizará **MySQL** como base de datos principal para el sistema de votació
 
 ## Opciones Consideradas
 
-### 1️⃣ **PostgreSQL**
+### 1. **PostgreSQL**
 ✅ Soporta transacciones ACID y alta integridad de datos.  
 ✅ Robusto en consultas complejas.  
 ❌ Puede tener una curva de aprendizaje más alta en comparación con MySQL.  
 
-### 2️⃣ **MongoDB (NoSQL)**
+### 2. **MongoDB (NoSQL)**
 ✅ Flexible para datos no estructurados.  
 ✅ Escalabilidad horizontal.  
 ❌ No es ideal para consultas SQL estructuradas y relacionales.  
 
-### 3️⃣ **MySQL (Decisión Final)**
+### 3. **MySQL (Decisión Final)**
 ✅ Popularidad y gran comunidad de soporte.  
 ✅ Alto rendimiento en consultas SQL.  
 ✅ Compatible con CodeIgniter y otras tecnologías del stack.  
