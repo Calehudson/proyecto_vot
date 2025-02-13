@@ -1,5 +1,7 @@
 # ADR 007: Herramientas de Gestión de la configuración - Git vs Jira 
 
+### **Fecha:** [ 2025-02-09 ] 
+
 ## Contexto
 La gestión de configuración es fundamental para la organización y mantenimiento de proyectos asegurando la calidad del producto final, del sistema de votación para Operación Triunfo. Dado que el sistema de votación estará en producción por al menos diez años, es fundamental elegir herramientas que permita administrar versiones, coordinar tareas y facilitar la comunicación entre equipos dando así la facilidad de escalar y adaptar el desarrollo a futuras necesidades. 
 Se consideran opciones como GitHub, GitLab y Jira, las cuales son herramientas de control de versiones y de gestión. ¿Cuál de estas plataformas sería la más adecuada para gestionar el proyecto del sistema de votación de Operación Triunfo? ¿Se pueden complementar con otras herramientas para maximizar la eficiencia y adaptabilidad del desarrollo? 
