@@ -49,4 +49,4 @@ Se utilizará **Scrum** como modelo de gestión ya que permite realizar tareas a
 ---
 
 📌 **Ubicación del archivo en GitHub:**  
-📂 `docs/adr/0006-uso-de-nginx.md`
+📂 `docs/adr/0006-herramiemtas-de-gestion.md`
