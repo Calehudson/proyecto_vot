@@ -1,10 +1,10 @@
 # ADR 0002: Uso de CodeIgniter 4 como Framework
 
 ## Contexto
-Para el sistema de votación de "Operación Triunfo" se requiere desarrollar un backend que permita un **desarrollo ágil**, una **integración eficiente con Nginx**, compatibilidad nativa con PHP y la posibilidad de migrar fácilmente a entornos dockerizados. Dado que aún no se ha implementado el sistema, existe la oportunidad de definir la tecnología que permita construir una aplicación robusta y escalable desde sus inicios, sin introducir complejidad innecesaria.
+Para el sistema de votación de "Operación Triunfo" se requiere desarrollar un backend que permita un **desarrollo ágil**, una **integración eficiente con Apache**, compatibilidad nativa con PHP y la posibilidad de migrar fácilmente a entornos dockerizados. Dado que aún no se ha implementado el sistema, existe la oportunidad de definir la tecnología que permita construir una aplicación robusta y escalable desde sus inicios, sin introducir complejidad innecesaria.
 
 ## Decisión
-Se opta por utilizar **CodeIgniter 4** como framework para el desarrollo del sistema. Esta elección se fundamenta en su ligereza, facilidad de aprendizaje y configuración, así como en su excelente integración con PHP y Nginx. Además, CodeIgniter 4 se adapta muy bien a entornos dockerizados, lo que garantiza que el entorno de desarrollo y producción sean consistentes, simplificando la migración y el despliegue.
+Se opta por utilizar **CodeIgniter 4** como framework para el desarrollo del sistema. Esta elección se fundamenta en su ligereza, facilidad de aprendizaje y configuración, así como en su excelente integración con PHP y Apache. Además, CodeIgniter 4 se adapta muy bien a entornos dockerizados, lo que garantiza que el entorno de desarrollo y producción sean consistentes, simplificando la migración y el despliegue.
 
 ## Opciones Consideradas
 
@@ -21,7 +21,7 @@ Se opta por utilizar **CodeIgniter 4** como framework para el desarrollo del sis
 ### 3. **CodeIgniter 4 (Decisión Final)**
 ✅ Ligero y fácil de aprender, lo que permite un desarrollo ágil y eficiente.  
 ✅ Excelente rendimiento y bajo consumo de recursos, ideal para manejar la alta concurrencia en sistemas de votación.  
-✅ Se integra de manera nativa con PHP y Nginx, simplificando la configuración y optimización del servidor.  
+✅ Se integra de manera nativa con PHP y Apache, simplificando la configuración y optimización del servidor.  
 ✅ Facilita la dockerización, permitiendo que el entorno se replique de manera consistente entre desarrollo y producción.  
 ❌ Ofrece menos funcionalidades "out-of-the-box" en comparación con Laravel, lo que podría requerir implementaciones manuales para características avanzadas; sin embargo, esta simplicidad es una ventaja para el alcance del proyecto.
 
@@ -30,7 +30,7 @@ Se opta por utilizar **CodeIgniter 4** como framework para el desarrollo del sis
 ### ✅ **Ventajas**
 - **Desarrollo Ágil:** La estructura ligera de CodeIgniter 4 permite construir rápidamente el sistema sin una sobrecarga innecesaria.
 - **Rendimiento Óptimo:** Su bajo consumo de recursos y alta velocidad de respuesta son ideales para una aplicación que puede enfrentar picos de concurrencia.
-- **Integración Sencilla con Nginx:** La configuración y optimización con Nginx es directa, lo que facilita el despliegue en producción.
+- **Integración Sencilla con Apache:** La configuración y optimización con Apache es directa, lo que facilita el despliegue en producción.
 - **Portabilidad y Dockerización:** La facilidad para dockerizar el entorno asegura que el mismo se pueda replicar en diferentes servidores, garantizando consistencia y escalabilidad.
 - **Soporte y Comunidad:** Aunque su comunidad es más reducida en comparación con Laravel, CodeIgniter 4 cuenta con una documentación clara y suficiente soporte para resolver la mayoría de los desafíos.
 
@@ -49,4 +49,6 @@ Se opta por utilizar **CodeIgniter 4** como framework para el desarrollo del sis
 
 📌 **Ubicación del archivo en GitHub:**  
 📂 `docs/adr/0002-uso-de-codeigniter4.md`
+
+
 
