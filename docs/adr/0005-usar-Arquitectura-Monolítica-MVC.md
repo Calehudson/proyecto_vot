@@ -37,6 +37,6 @@ El sistema de votación será desarrollado utilizando una arquitectura **monolí
 - **Documentación clara** de los componentes del sistema y el patrón MVC para mejorar la curva de aprendizaje del equipo.  
 
 📌 **Ubicación del archivo en GitHub:**  
-📂 `docs/adr/0005-uso-de-mvc.md`
+📂 `docs/adr/0005-usar-Arquitectura-Monolítica-MVC.md`
 
 
