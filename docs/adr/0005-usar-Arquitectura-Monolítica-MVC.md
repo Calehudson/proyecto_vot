@@ -4,7 +4,7 @@
 Durante la fase de diseño del sistema de votación, se evaluaron diferentes enfoques arquitectónicos para garantizar una estructura flexible y mantenible. Si bien se optó por una arquitectura monolítica para minimizar la sobrecarga operativa, se decidió utilizar el **patrón Modelo-Vista-Controlador (MVC)** dentro de esta arquitectura en lugar de un diseño monolítico tradicional.
 
 ## **Decisión**
-El sistema de votación será desarrollado utilizando una arquitectura **monolítica con el patrón MVC** a través del framework **CodeIgniter (PHP)**, con **MySQL** como base de datos y **Nginx** como servidor web.
+El sistema de votación será desarrollado utilizando una arquitectura **monolítica con el patrón MVC** a través del framework **CodeIgniter (PHP)**, con **MySQL** como base de datos y **Apache** como servidor web.
 
 ## **Opciones Consideradas**
 
