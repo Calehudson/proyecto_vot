@@ -59,6 +59,7 @@ El sistema desplegará la pantalla inicial con el formulario de votación.
   LoadModule rewrite_module modules/mod_rewrite.so
   ```
 - Para solucionar problemas de conexión a la base de datos, verifica que MySQL esté en ejecución y que las credenciales en `Database.php` sean correctas.
+- Despues de clonar el repositorio, se recomienda instalar las dependencias de PHP con composer install
 
 🚀 ¡El sistema está listo para usarse!
 
