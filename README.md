@@ -27,7 +27,7 @@ Antes de comenzar, asegúrate de tener instalados los siguientes componentes en 
 3. Importar el script de la base de datos:
    - Seleccionar la base de datos creada.
    - Ir a la pestaña **Importar**.
-   - Seleccionar el archivo SQL ubicado en `proyecto_vot/BD/bdscript.sql`.
+   - Seleccionar el archivo SQL ubicado en `proyecto_vot/bd/bdscript.sql`.
    - Presionar **Continuar**.
 
 ### **3. Configuración del Sistema**
