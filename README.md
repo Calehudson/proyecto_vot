@@ -1,65 +1,53 @@
 # README - Despliegue del Sistema de Votación
 
-## **Requisitos Previos**
-Antes de comenzar, asegúrate de tener instalados los siguientes componentes en tu máquina local:
+## Requisitos previos
+Asegúrate de tener instalados los siguientes programas:
+- Git
+- Docker Compose
+- Docker Desktop
 
-- **Apache 2.4** (El módulo `mod_rewrite` debe estar habilitado)
-- **MySQL 15.1**
-- **PHP 8**
-- **Git** (Para clonar el repositorio)
-- También puedes utilizar un paquete de distribución como **XAMPP**, que instala todas las especificaciones mencionadas.
-
----
-
-## **Despliegue**
-### **1. Descargar el sistema**
-1. Ubicarse en la carpeta de salida del servidor web:
-   - Para **XAMPP**: `C:/xampp/htdocs/`
-   - Para **WAMP**: `C:/wamp/www/`
-2. Abrir una terminal y ejecutar el siguiente comando para clonar el repositorio:
-   ```sh
-   git clone https://github.com/Calehudson/proyecto_vot.git
-   ```
-
-### **2. Importar la Base de Datos**
-1. Abrir **phpMyAdmin** accediendo a [http://localhost/phpmyadmin](http://localhost/phpmyadmin).
-2. Crear una nueva base de datos (por ejemplo, `bd_sistema`).
-3. Importar el script de la base de datos:
-   - Seleccionar la base de datos creada.
-   - Ir a la pestaña **Importar**.
-   - Seleccionar el archivo SQL ubicado en `proyecto_vot/bd/bdscript.sql`.
-   - Presionar **Continuar**.
-
-### **3. Configuración del Sistema**
-1. Abrir el archivo de configuración de la base de datos en `app/Config/Database.php`.
-2. Modificar los siguientes valores con las credenciales de la base de datos:
-   ```php
-   public $default = [  
-       'hostname' => 'localhost',  
-       'username' => 'root',  
-       'password' => 'contraseña del root',  
-       'database' => 'nombre de la bd', 
-       'port' => 3306, 
-   ];
-   ```
-
-### **4. Ejecutar el Sistema**
-Para acceder al sistema, abre un navegador web y visita la siguiente URL:
-```
-http://localhost/proyecto_vot
+## Despliegue
+Clonar la carpeta `sistema` del repositorio de GitHub:
+```bash
+git clone --no-checkout https://github.com/Calehudson/proyecto_vot.git
+cd proyecto_vot  
+git sparse-checkout init --cone
+git sparse-checkout set sistema
+git checkout
 ```
 
-El sistema desplegará la pantalla inicial con el formulario de votación.
+## Dockerización
+Abrir la terminal en Docker Desktop y ejecutar los siguientes comandos desde la carpeta `sistema`.
 
----
+### Levantar los contenedores
+```bash
+docker-compose up -d
+```
 
-## **Notas Adicionales**
-- Si `mod_rewrite` no está habilitado, edita el archivo `httpd.conf` en Apache y asegúrate de que la siguiente línea no tenga `#` al inicio:
-  ```apache
-  LoadModule rewrite_module modules/mod_rewrite.so
-  ```
-- Para solucionar problemas de conexión a la base de datos, verifica que MySQL esté en ejecución y que las credenciales en `Database.php` sean correctas.
-- Despues de clonar el repositorio, se recomienda instalar las dependencias de PHP con composer install
+### Si Kong entra en un bucle, seguir estos pasos:
+1. **Detener el servicio:**
+   ```bash
+   docker stop kong
+   ```
+
+2. **Crear las migraciones:**
+   ```bash
+   docker run --rm --network=docker_proyecto_vot_mynetwork \
+     -e KONG_DATABASE=postgres \
+     -e KONG_PG_HOST=kong-database \
+     -e KONG_PG_USER=kong \
+     -e KONG_PG_PASSWORD=kong \
+     kong/kong kong migrations bootstrap
+   ```
+
+3. **Cargar los datos del `kong.yml` en la base de datos:**
+   ```bash
+   docker exec -it kong kong config db_import /etc/kong/kong.yml
+   ```
+
+## Ejecutar el sistema
+Una vez levantados los contenedores, acceder a la dirección:
+[http://localhost:8000](http://localhost:8000)
 
 🚀 ¡El sistema está listo para usarse!
 
