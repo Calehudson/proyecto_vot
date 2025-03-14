@@ -1,0 +1,62 @@
+_format_version: "2.1"
+
+services:
+  - name: frontend
+    url: http://apache:80/
+    routes:
+      - name: frontend-route
+        paths:
+          - /
+        protocols:
+          - http
+          - https
+
+  - name: microservice1
+    url: http://apache:80/api/microservice1
+    routes:
+      - name: microservice1-route
+        paths:
+          - /api/microservice1
+        protocols:
+          - http
+          - https
+
+  - name: microservice2
+    url: http://apache:80/api/microservice2
+    routes:
+      - name: microservice2-route
+        paths:
+          - /api/microservice2
+        protocols:
+          - http
+          - https
+
+  - name: microservice3
+    url: http://apache:80/api/microservice3
+    routes:
+      - name: microservice3-route
+        paths:
+          - /api/microservice3
+        protocols:
+          - http
+          - https
+
+plugins:
+  - name: cors
+    config:
+      origins:
+        - "*"
+      methods:
+        - GET
+        - POST
+        - PUT
+        - DELETE
+        - OPTIONS
+      headers:
+        - Accept
+        - Content-Type
+        - Authorization
+      exposed_headers:
+        - X-Custom-Header
+      credentials: true
+      max_age: 3600
