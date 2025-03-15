@@ -26,4 +26,4 @@ jobs:
         push: false
     
     - name: Build and run Docker Compose
-      run: docker compose up --build -d
+      run: docker compose -f ./sistema/docker-compose.yml up --build -d
