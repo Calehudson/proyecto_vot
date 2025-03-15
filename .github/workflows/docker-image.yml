@@ -1,0 +1,29 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up docker
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build and push apache
+      uses: docker/build-push-action@v6
+      with:
+        context: ./sistema/apache
+        push: false
+    
+    - name: Build and run Docker Compose
+      run: docker compose -f ./sistema/docker-compose.yml up --build -d
