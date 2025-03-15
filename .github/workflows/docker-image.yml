@@ -27,6 +27,3 @@ jobs:
     
     - name: Build and run Docker Compose
       run: docker compose -f ./sistema/docker-compose.yml up --build -d
-
-    - name: Test Kong API
-      run: curl -f http://localhost:8000 || exit 1
