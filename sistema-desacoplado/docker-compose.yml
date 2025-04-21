@@ -15,6 +15,8 @@ services:
       - ./db:/docker-entrypoint-initdb.d
     ports:
       - "3306:3306"
+    networks:        
+      - kong-net
 
   ms-logeo:
     build: ./ms-logeo
@@ -94,14 +96,13 @@ services:
       KONG_PROXY_ERROR_LOG: /dev/stderr
       KONG_ADMIN_ERROR_LOG: /dev/stderr
       KONG_ADMIN_LISTEN: 0.0.0.0:8001
-      KONG_DECLARATIVE_CONFIG: /kong/kong.yml
-    volumes:
-      - ./kong/kong.yml:/kong/kong.yml
     ports:
       - "8000:8000"     # proxy
       - "8001:8001"     # admin
     networks:
       - kong-net
+    volumes:
+      - ./kong-logs:/var/log/kong
 
 networks:
   kong-net:

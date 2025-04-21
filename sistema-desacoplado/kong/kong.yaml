@@ -1,0 +1,280 @@
+_format_version: "3.0"
+consumers:
+- username: anonymous_user
+- keyauth_credentials:
+  - key: 1JRy74hZjAETqJeWTm569FQvtDvdmZr1
+  - key: nC8l0eyQy7H9Hn0hC1xYALFMOX92OQ0K
+  username: usuario_externo
+- jwt_secrets:
+  - algorithm: HS256
+    key: 8f01T8gMPgvJP8lf5ZVP738wbZZPzCZT
+    secret: LFQTyqqHAyJEGTSqwfUjDua7Az8d9Bbu
+  username: usuario_frontend
+plugins:
+- config:
+    custom_fields_by_lua: null
+    path: /var/log/kong/all_requests.log
+    reopen: false
+  enabled: true
+  name: file-log
+  protocols:
+  - grpc
+  - grpcs
+  - http
+  - https
+services:
+- connect_timeout: 60000
+  enabled: true
+  host: ms-logeo
+  name: ms-logeo
+  plugins:
+  - config:
+      credentials: true
+      exposed_headers:
+      - X-Custom-Header
+      headers:
+      - Accept
+      - Authorization
+      - Content-Type
+      - Origin
+      max_age: 3600
+      methods:
+      - GET
+      - HEAD
+      - PUT
+      - PATCH
+      - POST
+      - DELETE
+      - OPTIONS
+      origins:
+      - http://3.224.218.110:8080
+      preflight_continue: false
+    enabled: true
+    name: cors
+    protocols:
+    - grpc
+    - grpcs
+    - http
+    - https
+  port: 80
+  protocol: http
+  read_timeout: 60000
+  retries: 5
+  routes:
+  - https_redirect_status_code: 426
+    id: 4e1d4b8c-fea2-4858-83d9-cd53249ce7cc
+    path_handling: v0
+    paths:
+    - /api/logeo
+    preserve_host: false
+    protocols:
+    - http
+    - https
+    regex_priority: 0
+    request_buffering: true
+    response_buffering: true
+    strip_path: false
+  - https_redirect_status_code: 426
+    id: 7ffb34e3-ad9f-4f39-81a8-dce9e19d8767
+    path_handling: v0
+    paths:
+    - /api/logeo
+    preserve_host: false
+    protocols:
+    - http
+    - https
+    regex_priority: 0
+    request_buffering: true
+    response_buffering: true
+    strip_path: false
+  write_timeout: 60000
+- connect_timeout: 60000
+  enabled: true
+  host: ms-participantes
+  name: ms-participantes
+  plugins:
+  - config:
+      credentials: true
+      exposed_headers:
+      - X-Custom-Header
+      headers:
+      - Accept
+      - Authorization
+      - Content-Type
+      - Origin
+      max_age: 3600
+      methods:
+      - GET
+      - HEAD
+      - PUT
+      - PATCH
+      - POST
+      - DELETE
+      - OPTIONS
+      origins:
+      - http://3.224.218.110:8080
+      preflight_continue: false
+    enabled: true
+    name: cors
+    protocols:
+    - grpc
+    - grpcs
+    - http
+    - https
+  port: 80
+  protocol: http
+  read_timeout: 60000
+  retries: 5
+  routes:
+  - https_redirect_status_code: 426
+    id: c9115216-f018-44fe-8caf-01eb9087b329
+    path_handling: v0
+    paths:
+    - /api/participantes
+    preserve_host: false
+    protocols:
+    - http
+    - https
+    regex_priority: 0
+    request_buffering: true
+    response_buffering: true
+    strip_path: true
+  write_timeout: 60000
+- connect_timeout: 60000
+  enabled: true
+  host: ms-votaciones
+  name: ms-votaciones
+  plugins:
+  - config:
+      credentials: true
+      exposed_headers:
+      - X-Custom-Header
+      headers:
+      - Accept
+      - Authorization
+      - Content-Type
+      - Origin
+      max_age: 3600
+      methods:
+      - GET
+      - HEAD
+      - PUT
+      - PATCH
+      - POST
+      - DELETE
+      - OPTIONS
+      origins:
+      - http://3.224.218.110:8080
+      preflight_continue: false
+    enabled: true
+    name: cors
+    protocols:
+    - grpc
+    - grpcs
+    - http
+    - https
+  port: 80
+  protocol: http
+  read_timeout: 60000
+  retries: 5
+  routes:
+  - https_redirect_status_code: 426
+    id: 54306aff-483b-4c5d-af78-10e9878b8366
+    path_handling: v0
+    paths:
+    - /api/votaciones
+    preserve_host: false
+    protocols:
+    - http
+    - https
+    regex_priority: 0
+    request_buffering: true
+    response_buffering: true
+    strip_path: false
+  - https_redirect_status_code: 426
+    id: ec57a9e8-00d0-4ed3-b4ef-6b753a9148c4
+    path_handling: v0
+    paths:
+    - /api/votaciones
+    preserve_host: false
+    protocols:
+    - http
+    - https
+    regex_priority: 0
+    request_buffering: true
+    response_buffering: true
+    strip_path: false
+  - https_redirect_status_code: 426
+    id: f1c3b406-8343-4e70-85a4-6a21de8fbfc9
+    path_handling: v0
+    paths:
+    - /api/votaciones/listavotaciones
+    plugins:
+    - config:
+        anonymous: e12b4338-3a5d-4378-a73a-5089142de66c
+        claims_to_verify: null
+        cookie_names: []
+        header_names:
+        - authorization
+        key_claim_name: iss
+        maximum_expiration: 0
+        run_on_preflight: true
+        secret_is_base64: false
+        uri_param_names:
+        - jwt
+      enabled: true
+      name: jwt
+      protocols:
+      - grpc
+      - grpcs
+      - http
+      - https
+    - config:
+        anonymous: e12b4338-3a5d-4378-a73a-5089142de66c
+        hide_credentials: false
+        key_in_body: false
+        key_in_header: true
+        key_in_query: true
+        key_names:
+        - apikey
+        run_on_preflight: true
+      enabled: true
+      name: key-auth
+      protocols:
+      - grpc
+      - grpcs
+      - http
+      - https
+    - config:
+        access:
+        - |-
+          local method = kong.request.get_method()
+          if method == "OPTIONS" then return end
+          local h = kong.request.get_headers()
+          local has_jwt = h["authorization"] and h["authorization"]:find("^Bearer%s+") ~= nil
+          local args = kong.request.get_query()
+          local has_key = args["apikey"] ~= nil
+          if not has_jwt and not has_key then
+            return kong.response.exit(401, { message = "Unauthorized: se requiere JWT o API-Key" })
+          end
+        body_filter: []
+        certificate: []
+        header_filter: []
+        log: []
+        rewrite: []
+      enabled: true
+      name: pre-function
+      protocols:
+      - grpc
+      - grpcs
+      - http
+      - https
+    preserve_host: false
+    protocols:
+    - http
+    - https
+    regex_priority: 0
+    request_buffering: true
+    response_buffering: true
+    strip_path: false
+  write_timeout: 60000

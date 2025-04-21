@@ -28,10 +28,10 @@ class Database extends Config
      */
     public array $default = [
         'DSN'          => '',
-        'hostname'     => 'mysql_db',
-        'username'     => 'myuser',
-        'password'     => 'BDMUR11',
-        'database'     => 'bdpvot',
+        'hostname'     => 'db',
+        'username'     => 'user',
+        'password'     => 'password',
+        'database'     => 'votaciondb',
         'DBDriver'     => 'MySQLi',
         'DBPrefix'     => '',
         'pConnect'     => false,
