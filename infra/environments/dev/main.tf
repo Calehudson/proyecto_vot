@@ -14,39 +14,34 @@ provider "aws" {
   region = var.aws_region
 }
 
+######################################
+# 1.b) AMI para bastión (Amazon Linux 2)
+######################################
+data "aws_ami" "amazon_linux" {
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["amzn2-ami-hvm-*-x86_64-gp2"]
+  }
+}
+
+######################################
+# 2) AZs disponibles
+######################################
 data "aws_availability_zones" "available" {
   state = "available"
 }
 
 ######################################
-# 2) Red: VPC, subnets, IGW y SGs
+# 3) Red: VPC, subnets y SGs
 ######################################
-
-# 2.a) VPC principal
 resource "aws_vpc" "main" {
   cidr_block = "10.0.0.0/16"
   tags = { Name = "vot-${var.environment}-vpc" }
 }
 
-# 2.b) Internet Gateway para dar salida a Internet
-resource "aws_internet_gateway" "igw" {
-  vpc_id = aws_vpc.main.id
-  tags   = { Name = "vot-${var.environment}-igw" }
-}
-
-# 2.c) Route Table pública con ruta 0.0.0.0/0 al IGW
-resource "aws_route_table" "public" {
-  vpc_id = aws_vpc.main.id
-
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.igw.id
-  }
-
-  tags = { Name = "vot-${var.environment}-public-rt" }
-}
-
-# 2.d) Subnets públicas
 resource "aws_subnet" "public" {
   count                   = 2
   vpc_id                  = aws_vpc.main.id
@@ -56,15 +51,6 @@ resource "aws_subnet" "public" {
   tags = { Name = "vot-${var.environment}-public-${count.index}" }
 }
 
-# 2.e) Asociar la Route Table a cada subnet pública
-resource "aws_route_table_association" "public" {
-  count          = length(aws_subnet.public)
-  subnet_id      = aws_subnet.public[count.index].id
-  route_table_id = aws_route_table.public.id
-}
-
-
-# 2.f) Security Group para ALB
 resource "aws_security_group" "alb_sg" {
   name        = "vot-${var.environment}-alb-sg"
   description = "Permite HTTP 80 y 8000 al ALB"
@@ -90,7 +76,6 @@ resource "aws_security_group" "alb_sg" {
   }
 }
 
-# 2.g) Security Group para ECS tasks
 resource "aws_security_group" "ecs_sg" {
   name        = "vot-${var.environment}-ecs-sg"
   description = "ECS traffic from ALB"
@@ -111,9 +96,8 @@ resource "aws_security_group" "ecs_sg" {
 }
 
 ######################################
-# 3) Base de datos MySQL en RDS
+# 4) Base de datos MySQL en RDS (NO pública)
 ######################################
-
 resource "aws_db_subnet_group" "db_subnets" {
   name       = "vot-${var.environment}-db-subnets"
   subnet_ids = aws_subnet.public[*].id
@@ -138,22 +122,22 @@ resource "aws_security_group" "db_sg" {
 }
 
 resource "aws_db_instance" "mysql" {
-  identifier             = "vot-${var.environment}-db"
-  engine                 = "mysql"
-  engine_version         = "8.0"
-  instance_class         = "db.t3.micro"
-  allocated_storage      = 20
-  username               = var.db_username
-  password               = var.db_password
-  skip_final_snapshot    = true
-  db_subnet_group_name   = aws_db_subnet_group.db_subnets.name
-  vpc_security_group_ids = [aws_security_group.db_sg.id]
-  publicly_accessible    = false
+  identifier              = "vot-${var.environment}-db"
+  engine                  = "mysql"
+  engine_version          = "8.0"
+  instance_class          = "db.t3.micro"
+  allocated_storage       = 20
+  username                = var.db_username
+  password                = var.db_password
+  skip_final_snapshot     = true
+  publicly_accessible     = false    # <<< impedir acceso público
+  db_subnet_group_name    = aws_db_subnet_group.db_subnets.name
+  vpc_security_group_ids  = [aws_security_group.db_sg.id]
   tags = { Name = "vot-${var.environment}-mysql" }
 }
 
 ######################################
-# 4) ECR: repos para cada servicio
+# 5) ECR: repos para cada servicio
 ######################################
 resource "aws_ecr_repository" "repos" {
   for_each = toset(var.services)
@@ -161,14 +145,14 @@ resource "aws_ecr_repository" "repos" {
 }
 
 ######################################
-# 5) ECS Cluster
+# 6) ECS Cluster
 ######################################
 resource "aws_ecs_cluster" "main" {
   name = "vot-${var.environment}-cluster"
 }
 
 ######################################
-# 6) Application Load Balancer (ALB)
+# 7) Application Load Balancer (ALB)
 ######################################
 resource "aws_lb" "main" {
   name               = "vot-${var.environment}-alb"
@@ -177,15 +161,11 @@ resource "aws_lb" "main" {
   security_groups    = [aws_security_group.alb_sg.id]
 }
 
-######################################
-# 7) Target Groups y Listeners
-######################################
 resource "aws_lb_target_group" "frontend_tg" {
-  name        = "frontend-${var.environment}-tg"
-  port        = 80
-  protocol    = "HTTP"
-  vpc_id      = aws_vpc.main.id
-  target_type = "ip"      # ← Compatible con Fargate/awsvpc
+  name     = "frontend-${var.environment}-tg"
+  port     = 80
+  protocol = "HTTP"
+  vpc_id   = aws_vpc.main.id
 
   health_check {
     path    = "/"
@@ -205,11 +185,10 @@ resource "aws_lb_listener" "frontend_listener" {
 }
 
 resource "aws_lb_target_group" "kong_tg" {
-  name        = "kong-${var.environment}-tg"
-  port        = 8000
-  protocol    = "HTTP"
-  vpc_id      = aws_vpc.main.id
-  target_type = "ip"      # ← Compatible con Fargate/awsvpc
+  name     = "kong-${var.environment}-tg"
+  port     = 8000
+  protocol = "HTTP"
+  vpc_id   = aws_vpc.main.id
 
   health_check {
     path    = "/"
@@ -241,9 +220,12 @@ locals {
 }
 
 # ARN del Role existente para ECS Task Execution
-# Ya lo declaraste en variables.tf: var.ecs_exec_role_arn
+variable "ecs_exec_role_arn" {
+  type        = string
+  description = "ARN del IAM Role existente con AmazonECSTaskExecutionRolePolicy"
+}
 
-# Ejemplo para ms-logeo (repite para cada servicio cambiando names, ports y TGs)
+# -- ms-logeo
 resource "aws_ecs_task_definition" "ms_logeo" {
   family                   = "ms-logeo"
   requires_compatibilities = ["FARGATE"]
@@ -272,7 +254,7 @@ resource "aws_ecs_service" "ms_logeo" {
   network_configuration {
     subnets         = aws_subnet.public[*].id
     security_groups = [aws_security_group.ecs_sg.id]
-    assign_public_ip = true   # ← Tarea con IP pública
+    assign_public_ip= false
   }
 
   load_balancer {
@@ -282,38 +264,198 @@ resource "aws_ecs_service" "ms_logeo" {
   }
 }
 
-# Repite bloques similares para:
-# - aws_ecs_task_definition/ms_participantes  + aws_ecs_service/ms_participantes  (target_group: frontend_tg)
-# - aws_ecs_task_definition/ms_votaciones    + aws_ecs_service/ms_votaciones    (target_group: frontend_tg)
-# - aws_ecs_task_definition/kong             + aws_ecs_service/kong             (target_group: kong_tg)
-# - aws_ecs_task_definition/frontend         + aws_ecs_service/frontend         (target_group: frontend_tg)
+# -- ms-participantes
+resource "aws_ecs_task_definition" "ms_participantes" {
+  family                   = "ms-participantes"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  cpu                      = "256"
+  memory                   = "512"
+  execution_role_arn       = var.ecs_exec_role_arn
 
-######################################
-# 9) Carga automática del init.sql
-######################################
-resource "null_resource" "db_init" {
-  triggers = {
-    init_hash = filesha256("${path.module}/init.sql")
+  container_definitions = jsonencode([
+    {
+      name         = "ms-participantes"
+      image        = "${aws_ecr_repository.repos["ms-participantes"].repository_url}:latest"
+      portMappings = [{ containerPort = 80, protocol = "tcp" }]
+      environment  = local.common_env
+    }
+  ])
+}
+
+resource "aws_ecs_service" "ms_participantes" {
+  name            = "ms-participantes"
+  cluster         = aws_ecs_cluster.main.id
+  task_definition = aws_ecs_task_definition.ms_participantes.arn
+  desired_count   = 2
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    subnets         = aws_subnet.public[*].id
+    security_groups = [aws_security_group.ecs_sg.id]
+    assign_public_ip= false
   }
-  depends_on = [ aws_db_instance.mysql ]
 
-  provisioner "local-exec" {
-    command = <<EOT
-mysql \
-  --host=${aws_db_instance.mysql.address} \
-  --port=3306 \
-  --user=${var.db_username} \
-  --password=${var.db_password} \
-  votaciondb < ${path.module}/init.sql
-EOT
+  load_balancer {
+    target_group_arn = aws_lb_target_group.frontend_tg.arn
+    container_name   = "ms-participantes"
+    container_port   = 80
+  }
+}
+
+# -- ms-votaciones
+resource "aws_ecs_task_definition" "ms_votaciones" {
+  family                   = "ms-votaciones"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  cpu                      = "256"
+  memory                   = "512"
+  execution_role_arn       = var.ecs_exec_role_arn
+
+  container_definitions = jsonencode([
+    {
+      name         = "ms-votaciones"
+      image        = "${aws_ecr_repository.repos["ms-votaciones"].repository_url}:latest"
+      portMappings = [{ containerPort = 80, protocol = "tcp" }]
+      environment  = local.common_env
+    }
+  ])
+}
+
+resource "aws_ecs_service" "ms_votaciones" {
+  name            = "ms-votaciones"
+  cluster         = aws_ecs_cluster.main.id
+  task_definition = aws_ecs_task_definition.ms_votaciones.arn
+  desired_count   = 2
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    subnets         = aws_subnet.public[*].id
+    security_groups = [aws_security_group.ecs_sg.id]
+    assign_public_ip= false
+  }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.frontend_tg.arn
+    container_name   = "ms-votaciones"
+    container_port   = 80
+  }
+}
+
+# -- kong
+resource "aws_ecs_task_definition" "kong" {
+  family                   = "kong"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  cpu                      = "256"
+  memory                   = "512"
+  execution_role_arn       = var.ecs_exec_role_arn
+
+  container_definitions = jsonencode([
+    {
+      name         = "kong"
+      image        = "${aws_ecr_repository.repos["kong"].repository_url}:latest"
+      portMappings = [{ containerPort = 8000, protocol = "tcp" }]
+      environment  = local.common_env
+    }
+  ])
+}
+
+resource "aws_ecs_service" "kong" {
+  name            = "kong"
+  cluster         = aws_ecs_cluster.main.id
+  task_definition = aws_ecs_task_definition.kong.arn
+  desired_count   = 1
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    subnets         = aws_subnet.public[*].id
+    security_groups = [aws_security_group.ecs_sg.id]
+    assign_public_ip= false
+  }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.kong_tg.arn
+    container_name   = "kong"
+    container_port   = 8000
+  }
+}
+
+# -- frontend
+resource "aws_ecs_task_definition" "frontend" {
+  family                   = "frontend"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  cpu                      = "256"
+  memory                   = "512"
+  execution_role_arn       = var.ecs_exec_role_arn
+
+  container_definitions = jsonencode([
+    {
+      name         = "frontend"
+      image        = "${aws_ecr_repository.repos["frontend"].repository_url}:latest"
+      portMappings = [{ containerPort = 80, protocol = "tcp" }]
+      environment  = local.common_env
+    }
+  ])
+}
+
+resource "aws_ecs_service" "frontend" {
+  name            = "frontend"
+  cluster         = aws_ecs_cluster.main.id
+  task_definition = aws_ecs_task_definition.frontend.arn
+  desired_count   = 2
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    subnets         = aws_subnet.public[*].id
+    security_groups = [aws_security_group.ecs_sg.id]
+    assign_public_ip= false
+  }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.kong_tg.arn
+    container_name   = "frontend"
+    container_port   = 80
   }
 }
 
 ######################################
-# 10) Output del endpoint de la DB
+# 9) Bastión dentro de VPC (SSM-only)
+######################################
+resource "aws_security_group" "bastion_sg" {
+  name        = "vot-${var.environment}-bastion-sg"
+  description = "Seguridad para bastion host (SSM)"
+  vpc_id      = aws_vpc.main.id
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_instance" "bastion" {
+  ami                    = data.aws_ami.amazon_linux.id
+  instance_type          = "t3.micro"
+  subnet_id              = aws_subnet.public[0].id
+  vpc_security_group_ids = [aws_security_group.bastion_sg.id]
+  iam_instance_profile   = "LabInstanceProfile"
+  tags = {
+    Name = "vot-${var.environment}-bastion"
+  }
+}
+
+######################################
+# 10) Outputs
 ######################################
 output "db_endpoint" {
   description = "Endpoint de la instancia MySQL RDS"
   value       = aws_db_instance.mysql.address
 }
 
+output "bastion_id" {
+  description = "ID de la instancia bastión para SSM"
+  value       = aws_instance.bastion.id
+}
