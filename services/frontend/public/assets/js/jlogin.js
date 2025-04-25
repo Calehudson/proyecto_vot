@@ -1,8 +1,10 @@
+const API_BASE = `http://${window.location.hostname}:8000`;
+
 function logea() {
     let usuario = document.getElementById('usuario').value;
     let password = document.getElementById('password').value;
     
-    fetch('http://localhost:8000/api/logeo/usuarios/login', {
+    fetch('${API_BASE}/api/logeo/usuarios/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 'usuario': usuario, 'password': password })

@@ -1,3 +1,5 @@
+const API_BASE = `http://${window.location.hostname}:8000`;
+
 (function($) {
     "use strict";
 
@@ -7,7 +9,7 @@
 
         // 🔹 Obtener la lista de participantes
         function fetchParticipantes() {
-            $.get('http://localhost:8000/api/participantes/lista', function (response) { 
+            $.get('${API_BASE}/api/participantes/lista', function (response) { 
                 console.log("📥 Respuesta de la API (participantes):", response);
 
                 if (response.status !== "success") {
@@ -39,7 +41,7 @@
                     });
 
                     // 🔹 Obtener votos y puesto
-                    $.get('http://localhost:8000/api/votaciones/resultados/'+item.par_codigo, function (votosData) {
+                    $.get('${API_BASE}/api/votaciones/resultados/'+item.par_codigo, function (votosData) {
                         console.log(`📥 Datos de votos para ${item.par_codigo}:`, votosData);
 
                         // 🔹 Verificar que la respuesta es válida y contiene datos
@@ -102,7 +104,7 @@
 
 // 🔹 Registrar visitas en el microservicio
 document.addEventListener("DOMContentLoaded", function () {
-    fetch('http://localhost:8000/api/votaciones/visita', { 
+    fetch('${API_BASE}/api/votaciones/visita', { 
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({ 'url': window.location.href })
@@ -117,7 +119,7 @@ function votarPorParticipante(par_codigo) {
     var nombreElemento = document.getElementById("nombre" + par_codigo);
     var par_nombre = nombreElemento ? nombreElemento.innerText : "Participante desconocido";
 
-    fetch('http://localhost:8000/api/votaciones/voto', {
+    fetch('${API_BASE}/api/votaciones/voto', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({ 'par_codigo': par_codigo })
@@ -146,7 +148,7 @@ $('#tablavotaciones').DataTable({
     'filter': true,
     'stateSave': true,
     'ajax': {
-        "url": "http://localhost:8000/api/votaciones/listavotaciones",
+        "url": "${API_BASE}/api/votaciones/listavotaciones",
         "type": "GET",
         "dataSrc": "data",
         "beforeSend": function (request) {
@@ -220,7 +222,7 @@ function borravoto(codigo) {
             return;
         }
 
-        fetch("http://localhost:8000/api/votaciones/borravoto", {
+        fetch("${API_BASE}/api/votaciones/borravoto", {
             method: "DELETE",
             headers: {
                 "Content-Type": "application/json",

@@ -1,3 +1,5 @@
+const API_BASE = `http://${window.location.hostname}:8000`;
+
 $('#tablaparticipantes').DataTable({
     'paging': false,
     'lengthChange': false,
@@ -5,7 +7,7 @@ $('#tablaparticipantes').DataTable({
     'filter': true,
     'stateSave': true,
     'ajax': {
-        "url": "http://localhost:8000/api/participantes/lista",
+        "url": "${API_BASE}/api/participantes/lista",
         "type": "GET",
         "dataSrc": "data"  // 🔹 Ajuste aquí si la API devuelve {"status": "success", "data": [...]}
     },
@@ -44,7 +46,7 @@ $('#tablaparticipantes').DataTable({
 });
 
 document.addEventListener("DOMContentLoaded", function () {
-    fetch('http://localhost:8000/api/votaciones/visita', { 
+    fetch('${API_BASE}/api/votaciones/visita', { 
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded'

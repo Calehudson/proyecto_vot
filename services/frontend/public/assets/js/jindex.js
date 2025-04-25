@@ -1,3 +1,5 @@
+const API_BASE = `http://${window.location.hostname}:8000`;
+
 (function($) {
     "use strict";
 
@@ -6,7 +8,7 @@
         var screenWidth = $(window).width();
         
         function fetchDataAndRenderChart() {
-            $.get('http://localhost:8000/api/votaciones/porcentaje', function (response) { 
+            $.get('${API_BASE}/api/votaciones/porcentaje', function (response) { 
                 console.log("📥 Respuesta de la API (porcentaje):", response); // ✅ REGISTRO EN CONSOLA
         
                 if (response.status !== "success") {
@@ -140,7 +142,7 @@
 
 
 $(document).ready(function() {
-    $.getJSON('http://localhost:8000/api/votaciones/total')
+    $.getJSON('${API_BASE}/api/votaciones/total')
         .done(function(response) {
             if (response.status !== "success" || !Array.isArray(response.data) || response.data.length === 0) {
                 console.error("❌ Respuesta no válida o datos vacíos:", response);
@@ -169,7 +171,7 @@ $(document).ready(function() {
 
 // 🔹 Registrar visita en el microservicio
 document.addEventListener("DOMContentLoaded", function () {
-    fetch('http://localhost:8000/api/votaciones/visita', { 
+    fetch('${API_BASE}/api/votaciones/visita', { 
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded'
