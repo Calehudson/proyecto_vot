@@ -58,10 +58,11 @@ resource "aws_subnet" "public" {
 
 # 2.e) Asociar la Route Table a cada subnet pública
 resource "aws_route_table_association" "public" {
-  for_each        = aws_subnet.public
-  subnet_id       = each.value.id
-  route_table_id  = aws_route_table.public.id
+  count          = length(aws_subnet.public)
+  subnet_id      = aws_subnet.public[count.index].id
+  route_table_id = aws_route_table.public.id
 }
+
 
 # 2.f) Security Group para ALB
 resource "aws_security_group" "alb_sg" {
