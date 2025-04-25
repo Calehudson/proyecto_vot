@@ -148,7 +148,7 @@ resource "aws_db_instance" "mysql" {
   skip_final_snapshot    = true
   db_subnet_group_name   = aws_db_subnet_group.db_subnets.name
   vpc_security_group_ids = [aws_security_group.db_sg.id]
-  publicly_accessible    = true    # ← Hacer la instancia accesible públicamente
+  publicly_accessible    = false
   tags = { Name = "vot-${var.environment}-mysql" }
 }
 
