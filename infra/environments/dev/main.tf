@@ -219,11 +219,6 @@ locals {
   ]
 }
 
-# ARN del Role existente para ECS Task Execution
-variable "ecs_exec_role_arn" {
-  type        = string
-  description = "ARN del IAM Role existente con AmazonECSTaskExecutionRolePolicy"
-}
 
 # -- ms-logeo
 resource "aws_ecs_task_definition" "ms_logeo" {
