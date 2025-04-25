@@ -19,7 +19,9 @@ provider "aws" {
 ######################################
 resource "aws_vpc" "main" {
   cidr_block = "10.0.0.0/16"
-  tags = { Name = "vot-${var.environment}-vpc" }
+  tags = {
+    Name = "vot-${var.environment}-vpc"
+  }
 }
 
 resource "aws_subnet" "public" {
@@ -27,7 +29,9 @@ resource "aws_subnet" "public" {
   vpc_id                  = aws_vpc.main.id
   cidr_block              = cidrsubnet(aws_vpc.main.cidr_block, 8, count.index)
   map_public_ip_on_launch = true
-  tags = { Name = "vot-${var.environment}-public-${count.index}" }
+  tags = {
+    Name = "vot-${var.environment}-public-${count.index}"
+  }
 }
 
 resource "aws_security_group" "alb_sg" {
@@ -111,7 +115,9 @@ resource "aws_db_instance" "mysql" {
   skip_final_snapshot    = true
   db_subnet_group_name   = aws_db_subnet_group.db_subnets.name
   vpc_security_group_ids = [aws_security_group.db_sg.id]
-  tags = { Name = "vot-${var.environment}-mysql" }
+  tags = {
+    Name = "vot-${var.environment}-mysql"
+  }
 }
 
 ######################################
@@ -138,6 +144,12 @@ data "aws_iam_policy_document" "ecs_assume" {
       identifiers = ["ecs-tasks.amazonaws.com"]
     }
   }
+}
+
+# Usa aquí un role existente en lugar de crear uno nuevo:
+# Reemplaza "arn:aws:iam::123456789012:role/miEcsExecRole" por el ARN real de tu role
+locals {
+  ecs_exec_role_arn = "arn:aws:iam::123456789012:role/miEcsExecRole"
 }
 
 ######################################
@@ -204,7 +216,7 @@ locals {
     { name = "DB_HOST", value = aws_db_instance.mysql.address },
     { name = "DB_USER", value = var.db_username },
     { name = "DB_PASS", value = var.db_password },
-    { name = "DB_NAME", value = "votaciondb" }
+    { name = "DB_NAME", value = "votaciondb" },
   ]
 }
 
@@ -215,24 +227,234 @@ resource "aws_ecs_task_definition" "ms_logeo" {
   network_mode             = "awsvpc"
   cpu                      = "256"
   memory                   = "512"
-  execution_role_arn       = data.aws_iam_role.ecs_exec_role.arn
+  execution_role_arn       = local.ecs_exec_role_arn
 
-  container_definitions = jsonencode([{...}])
+  container_definitions = jsonencode([
+    {
+      name         = "ms-logeo"
+      image        = "${aws_ecr_repository.repos["ms-logeo"].repository_url}:latest"
+      portMappings = [
+        {
+          containerPort = 80
+          protocol      = "tcp"
+        }
+      ]
+      environment = local.common_env
+    }
+  ])
 }
 
-# services definitions omitted for brevity – follow same pattern
+resource "aws_ecs_service" "ms_logeo" {
+  name            = "ms-logeo"
+  cluster         = aws_ecs_cluster.main.id
+  task_definition = aws_ecs_task_definition.ms_logeo.arn
+  desired_count   = 2
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    subnets         = aws_subnet.public[*].id
+    security_groups = [aws_security_group.ecs_sg.id]
+    assign_public_ip= false
+  }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.frontend_tg.arn
+    container_name   = "ms-logeo"
+    container_port   = 80
+  }
+}
+
+# ms-participantes
+resource "aws_ecs_task_definition" "ms_participantes" {
+  family                   = "ms-participantes"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  cpu                      = "256"
+  memory                   = "512"
+  execution_role_arn       = local.ecs_exec_role_arn
+
+  container_definitions = jsonencode([
+    {
+      name         = "ms-participantes"
+      image        = "${aws_ecr_repository.repos["ms-participantes"].repository_url}:latest"
+      portMappings = [
+        {
+          containerPort = 80
+          protocol      = "tcp"
+        }
+      ]
+      environment = local.common_env
+    }
+  ])
+}
+
+resource "aws_ecs_service" "ms_participantes" {
+  name            = "ms-participantes"
+  cluster         = aws_ecs_cluster.main.id
+  task_definition = aws_ecs_task_definition.ms_participantes.arn
+  desired_count   = 2
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    subnets         = aws_subnet.public[*].id
+    security_groups = [aws_security_group.ecs_sg.id]
+    assign_public_ip= false
+  }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.frontend_tg.arn
+    container_name   = "ms-participantes"
+    container_port   = 80
+  }
+}
+
+# ms-votaciones
+resource "aws_ecs_task_definition" "ms_votaciones" {
+  family                   = "ms-votaciones"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  cpu                      = "256"
+  memory                   = "512"
+  execution_role_arn       = local.ecs_exec_role_arn
+
+  container_definitions = jsonencode([
+    {
+      name         = "ms-votaciones"
+      image        = "${aws_ecr_repository.repos["ms-votaciones"].repository_url}:latest"
+      portMappings = [
+        {
+          containerPort = 80
+          protocol      = "tcp"
+        }
+      ]
+      environment = local.common_env
+    }
+  ])
+}
+
+resource "aws_ecs_service" "ms_votaciones" {
+  name            = "ms-votaciones"
+  cluster         = aws_ecs_cluster.main.id
+  task_definition = aws_ecs_task_definition.ms_votaciones.arn
+  desired_count   = 2
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    subnets         = aws_subnet.public[*].id
+    security_groups = [aws_security_group.ecs_sg.id]
+    assign_public_ip= false
+  }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.frontend_tg.arn
+    container_name   = "ms-votaciones"
+    container_port   = 80
+  }
+}
+
+# kong
+resource "aws_ecs_task_definition" "kong" {
+  family                   = "kong"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  cpu                      = "256"
+  memory                   = "512"
+  execution_role_arn       = local.ecs_exec_role_arn
+
+  container_definitions = jsonencode([
+    {
+      name         = "kong"
+      image        = "${aws_ecr_repository.repos["kong"].repository_url}:latest"
+      portMappings = [
+        {
+          containerPort = 8000
+          protocol      = "tcp"
+        }
+      ]
+    }
+  ])
+}
+
+resource "aws_ecs_service" "kong" {
+  name            = "kong"
+  cluster         = aws_ecs_cluster.main.id
+  task_definition = aws_ecs_task_definition.kong.arn
+  desired_count   = 2
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    subnets         = aws_subnet.public[*].id
+    security_groups = [aws_security_group.ecs_sg.id]
+    assign_public_ip= false
+  }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.kong_tg.arn
+    container_name   = "kong"
+    container_port   = 8000
+  }
+}
+
+# frontend
+resource "aws_ecs_task_definition" "frontend" {
+  family                   = "frontend"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  cpu                      = "512"
+  memory                   = "1024"
+  execution_role_arn       = local.ecs_exec_role_arn
+
+  container_definitions = jsonencode([
+    {
+      name         = "frontend"
+      image        = "${aws_ecr_repository.repos["frontend"].repository_url}:latest"
+      portMappings = [
+        {
+          containerPort = 80
+          protocol      = "tcp"
+        }
+      ]
+    }
+  ])
+}
+
+resource "aws_ecs_service" "frontend" {
+  name            = "frontend"
+  cluster         = aws_ecs_cluster.main.id
+  task_definition = aws_ecs_task_definition.frontend.arn
+  desired_count   = 2
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    subnets         = aws_subnet.public[*].id
+    security_groups = [aws_security_group.ecs_sg.id]
+    assign_public_ip= false
+  }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.frontend_tg.arn
+    container_name   = "frontend"
+    container_port   = 80
+  }
+}
 
 ######################################
 # 8) Carga automática del init.sql
 ######################################
 resource "null_resource" "db_init" {
-  triggers = { init_hash = filesha256("${path.module}/init.sql") }
+  triggers = {
+    init_hash = filesha256("${path.module}/init.sql")
+  }
   depends_on = [ aws_db_instance.mysql ]
 
   provisioner "local-exec" {
     command = <<EOT
-mysql --host=${aws_db_instance.mysql.address} --port=3306 \ 
-  --user=${var.db_username} --password=${var.db_password} votaciondb < ${path.module}/init.sql
+mysql \
+  --host=${aws_db_instance.mysql.address} \
+  --port=3306 \
+  --user=${var.db_username} \
+  --password=${var.db_password} \
+  votaciondb < ${path.module}/init.sql
 EOT
   }
 }
