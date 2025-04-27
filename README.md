@@ -17,7 +17,7 @@ Este documento describe el procedimiento para provisionar la infraestructura en 
 
    ```bash
    # Si no está clonado
-   git clone <URL_DE_TU_REPO>
+   git clone https://github.com/Calehudson/proyecto_vot.git
    cd proyecto_vot/infra/environments/dev
 
    # Si ya estaba clonado
@@ -63,6 +63,4 @@ Este documento describe el procedimiento para provisionar la infraestructura en 
      - Confirmar que la instancia MySQL esté accesible desde las tareas ECS (por ejemplo, mediante health checks de los microservicios).
 
 ---
-
-> **Nota:** Para entornos de producción, repetir el mismo flujo apuntando a `infra/environments/prod` y utilizando variables de configuración de ese entorno.
 
