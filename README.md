@@ -1,53 +1,68 @@
 # README - Despliegue del Sistema de Votación
 
-## Requisitos previos
-Asegúrate de tener instalados los siguientes programas:
-- Git
-- Docker Compose
-- Docker Desktop
+Este documento describe el procedimiento para provisionar la infraestructura en AWS utilizando AWS CloudShell y Terraform.
 
-## Despliegue
-Clonar la carpeta `sistema` del repositorio de GitHub:
-```bash
-git clone --no-checkout https://github.com/Calehudson/proyecto_vot.git
-cd proyecto_vot  
-git sparse-checkout init --cone
-git sparse-checkout set sistema
-git checkout
-```
+---
 
-## Dockerización
-Abrir la terminal en Docker Desktop y ejecutar los siguientes comandos desde la carpeta `sistema`.
+## Prerrequisitos
 
-### Levantar los contenedores
-```bash
-docker-compose up -d
-```
+- Cuenta AWS con permisos de IAM para crear y gestionar recursos (VPC, ECS, RDS, S3, DynamoDB, etc.).
+- Repositorio Git clonado en CloudShell o acceso con `git pull`.
+- Archivo `terraform.tfvars` con las variables necesarias (`db_username`, `db_password`, `ecs_exec_role_arn`, etc.).
+- Backend de Terraform configurado en S3 y con locking en DynamoDB.
 
-### Si Kong entra en un bucle, seguir estos pasos:
-1. **Detener el servicio:**
+## Pasos para provisionar infraestructura
+
+1. **Clonar o actualizar el repositorio**
+
    ```bash
-   docker stop kong
+   # Si no está clonado
+   git clone <URL_DE_TU_REPO>
+   cd proyecto_vot/infra/environments/dev
+
+   # Si ya estaba clonado
+   git pull origin main
+   cd proyecto_vot/infra/environments/dev
    ```
 
-2. **Crear las migraciones:**
+2. **Inicializar el entorno de Terraform**
+
    ```bash
-   docker run --rm --network=docker_proyecto_vot_mynetwork \
-     -e KONG_DATABASE=postgres \
-     -e KONG_PG_HOST=kong-database \
-     -e KONG_PG_USER=kong \
-     -e KONG_PG_PASSWORD=kong \
-     kong/kong kong migrations bootstrap
+   terraform init
    ```
 
-3. **Cargar los datos del `kong.yml` en la base de datos:**
+   - Instala los proveedores necesarios.
+   - Configura el backend en S3 y el locking en DynamoDB.
+
+3. **Revisar el plan de cambios**
+
    ```bash
-   docker exec -it kong kong config db_import /etc/kong/kong.yml
+   terraform plan -var-file="terraform.tfvars"
    ```
 
-## Ejecutar el sistema
-Una vez levantados los contenedores, acceder a la dirección:
-[http://localhost:8000](http://localhost:8000)
+   - Muestra en pantalla todos los recursos que se crearán, modificarán o eliminarán.
+   - Verificar que las acciones reflejen los cambios esperados.
 
-🚀 ¡El sistema está listo para usarse!
+4. **Aplicar los cambios en AWS**
+
+   ```bash
+   terraform apply -var-file="terraform.tfvars"
+   ```
+
+   - Crea o actualiza todos los recursos declarados en la configuración (VPC, subnets, Security Groups, ALB, ECS Cluster, RDS, EC2 Bastión, ECR, etc.).
+   - Terraform bloqueará el estado durante el apply y lo liberará al finalizar.
+
+5. **Verificar el despliegue**
+
+   - Acceder a la **consola de AWS** (VPC, ECS, RDS, ALB, ECR, S3, DynamoDB) y comprobar que todos los recursos estén en estado `Active` o `Healthy`.
+   - En **Application Load Balancer**:
+     - Revisar los **Target Groups** de Frontend y Kong; deben aparecer tareas en estado `healthy`.
+   - En **ECS**:
+     - Verificar que las tareas estén desplegadas con la etiqueta de imagen correcta y en estado `RUNNING`.
+   - En **RDS**:
+     - Confirmar que la instancia MySQL esté accesible desde las tareas ECS (por ejemplo, mediante health checks de los microservicios).
+
+---
+
+> **Nota:** Para entornos de producción, repetir el mismo flujo apuntando a `infra/environments/prod` y utilizando variables de configuración de ese entorno.
 
