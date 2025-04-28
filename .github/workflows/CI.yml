@@ -1,0 +1,47 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up docker
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build and push frontend
+      uses: docker/build-push-action@v6
+      with:
+        context: ./services/frontend
+        push: false
+
+    - name: Build and push ms-logeo
+      uses: docker/build-push-action@v6
+      with:
+        context: ./services/ms-logeo
+        push: false
+
+    - name: Build and push ms-participantes
+      uses: docker/build-push-action@v6
+      with:
+        context: ./services/ms-participantes
+        push: false
+
+    - name: Build and push ms-votaciones
+      uses: docker/build-push-action@v6
+      with:
+        context: ./services/ms-votaciones
+        push: false
+    
+   
+
