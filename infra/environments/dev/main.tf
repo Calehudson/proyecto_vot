@@ -233,12 +233,11 @@ resource "aws_ecs_task_definition" "ms_logeo" {
   network_mode             = "awsvpc"
   cpu                      = "256"
   memory                   = "512"
-  execution_role_arn       = aws_iam_role.ecs_task_execution.arn
 
   container_definitions = jsonencode([
     {
       name         = "ms-logeo"
-      image        = "${aws_ecr_repository.repos["ms-logeo"].repository_url}:latest"
+      image        = "calehu/ms-logeo:latest"
       portMappings = [{ containerPort = 80, protocol = "tcp" }]
       environment  = local.common_env
     }
@@ -272,12 +271,11 @@ resource "aws_ecs_task_definition" "ms_participantes" {
   network_mode             = "awsvpc"
   cpu                      = "256"
   memory                   = "512"
-  execution_role_arn       = aws_iam_role.ecs_task_execution.arn
 
   container_definitions = jsonencode([
     {
       name         = "ms-participantes"
-      image        = "${aws_ecr_repository.repos["ms-participantes"].repository_url}:latest"
+      image        = "calehu/ms-participantes:latest"
       portMappings = [{ containerPort = 80, protocol = "tcp" }]
       environment  = local.common_env
     }
@@ -311,12 +309,11 @@ resource "aws_ecs_task_definition" "ms_votaciones" {
   network_mode             = "awsvpc"
   cpu                      = "256"
   memory                   = "512"
-  execution_role_arn       = aws_iam_role.ecs_task_execution.arn
 
   container_definitions = jsonencode([
     {
       name         = "ms-votaciones"
-      image        = "${aws_ecr_repository.repos["ms-votaciones"].repository_url}:latest"
+      image        = "calehu/ms-votaciones:latest"
       portMappings = [{ containerPort = 80, protocol = "tcp" }]
       environment  = local.common_env
     }
@@ -350,12 +347,11 @@ resource "aws_ecs_task_definition" "kong" {
   network_mode             = "awsvpc"
   cpu                      = "256"
   memory                   = "512"
-  execution_role_arn       = aws_iam_role.ecs_task_execution.arn
 
   container_definitions = jsonencode([
     {
       name         = "kong"
-      image        = "${aws_ecr_repository.repos["kong"].repository_url}:latest"
+      image        = "calehu/kong:latest"
       portMappings = [{ containerPort = 8000, protocol = "tcp" }]
       environment  = local.common_env
     }
@@ -389,12 +385,11 @@ resource "aws_ecs_task_definition" "frontend" {
   network_mode             = "awsvpc"
   cpu                      = "256"
   memory                   = "512"
-  execution_role_arn       = aws_iam_role.ecs_task_execution.arn
 
   container_definitions = jsonencode([
     {
       name         = "frontend"
-      image        = "${aws_ecr_repository.repos["frontend"].repository_url}:latest"
+      image        = "calehu/frontend:latest"
       portMappings = [{ containerPort = 80, protocol = "tcp" }]
       environment  = local.common_env
     }
