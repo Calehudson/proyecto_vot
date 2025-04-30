@@ -30,8 +30,4 @@ variable "services" {
   ]
 }
 
-variable "ecs_exec_role_arn" {
-  description = "ARN del role service-linked de ECS (ya tiene AmazonECSTaskExecutionRolePolicy)"
-  type        = string
-}
 
