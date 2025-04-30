@@ -352,31 +352,8 @@ resource "aws_ecs_task_definition" "kong" {
     {
       name         = "kong"
       image        = "calehu/kong:latest"
-      essential    = true
-
-      # Exponemos tanto el proxy (8000) como el admin (8001)
-      portMappings = [
-        { containerPort = 8000, protocol = "tcp" },
-        { containerPort = 8001, protocol = "tcp" },
-      ]
-
-      # (2) Variables de entorno para arrancar Kong en modo declarative (DB-less):
-      environment = [
-        { name = "KONG_DATABASE"           , value = "off" },
-        { name = "KONG_DECLARATIVE_CONFIG" , value = "/usr/local/kong/declarative/kong.yaml" },
-        { name = "KONG_PROXY_LISTEN"       , value = "0.0.0.0:8000" },
-        { name = "KONG_ADMIN_LISTEN"       , value = "0.0.0.0:8001" },
-      ]
-
-      # (3) Logging en CloudWatch Logs:
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          awslogs-group         = "/ecs/vot-dev-kong"
-          awslogs-region        = "us-east-1"
-          awslogs-stream-prefix = "kong"
-        }
-      }
+      portMappings = [{ containerPort = 8000, protocol = "tcp" }]
+      environment  = local.common_env
     }
   ])
 }
