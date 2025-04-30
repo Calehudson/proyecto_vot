@@ -352,8 +352,19 @@ resource "aws_ecs_task_definition" "kong" {
     {
       name         = "kong"
       image        = "calehu/kong:latest"
-      portMappings = [{ containerPort = 8000, protocol = "tcp" }]
-      environment  = local.common_env
+      essential = true
+
+      portMappings = [
+        { containerPort = 8000, protocol = "tcp" },
+        { containerPort = 8001, protocol = "tcp" },
+      ]
+
+      environment = [
+        { name = "KONG_DATABASE"           , value = "off" },
+        { name = "KONG_DECLARATIVE_CONFIG" , value = "/usr/local/kong/declarative/kong.yaml" },
+        { name = "KONG_PROXY_LISTEN"       , value = "0.0.0.0:8000" },
+        { name = "KONG_ADMIN_LISTEN"       , value = "0.0.0.0:8001" },
+      ]
     }
   ])
 }
