@@ -402,7 +402,6 @@ resource "aws_ecs_task_definition" "frontend" {
       name         = "frontend"
       image        = "calehu/frontend:latest"
       portMappings = [{ containerPort = 80, protocol = "tcp" }]
-      environment  = local.common_env
     }
   ])
 }
