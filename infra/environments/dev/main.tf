@@ -156,7 +156,52 @@ resource "aws_ecs_cluster" "main" {
 }
 
 ######################################
-# 7) Application Load Balancer (ALB)
+# 7) Service Discovery (Cloud Map)
+######################################
+resource "aws_service_discovery_private_dns_namespace" "vot" {
+  name        = "vot.local"
+  description = "Namespace privado para vot-${var.environment}"
+  vpc         = aws_vpc.main.id
+}
+
+resource "aws_service_discovery_service" "ms_logeo_sd" {
+  name = "ms-logeo"
+  dns_config {
+    namespace_id = aws_service_discovery_private_dns_namespace.vot.id
+    dns_records {
+      type = "A"
+      ttl  = 10
+    }
+    routing_policy = "MULTIVALUE"
+  }
+}
+
+resource "aws_service_discovery_service" "ms_participantes_sd" {
+  name = "ms-participantes"
+  dns_config {
+    namespace_id = aws_service_discovery_private_dns_namespace.vot.id
+    dns_records {
+      type = "A"
+      ttl  = 10
+    }
+    routing_policy = "MULTIVALUE"
+  }
+}
+
+resource "aws_service_discovery_service" "ms_votaciones_sd" {
+  name = "ms-votaciones"
+  dns_config {
+    namespace_id = aws_service_discovery_private_dns_namespace.vot.id
+    dns_records {
+      type = "A"
+      ttl  = 10
+    }
+    routing_policy = "MULTIVALUE"
+  }
+}
+
+######################################
+# 8) Application Load Balancer (ALB)
 ######################################
 resource "aws_lb" "main" {
   name               = "vot-${var.environment}-alb"
@@ -178,17 +223,6 @@ resource "aws_lb_target_group" "frontend_tg" {
   }
 }
 
-resource "aws_lb_listener" "frontend_listener" {
-  load_balancer_arn = aws_lb.main.arn
-  port              = 80
-  protocol          = "HTTP"
-
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.frontend_tg.arn
-  }
-}
-
 resource "aws_lb_target_group" "kong_tg" {
   name        = "kong-${var.environment}-tg"
   port        = 8000
@@ -202,21 +236,39 @@ resource "aws_lb_target_group" "kong_tg" {
   }
 }
 
-resource "aws_lb_listener" "kong_listener" {
+# Listener principal en 80: front por defecto
+resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.main.arn
-  port              = 8000
+  port              = 80
   protocol          = "HTTP"
 
   default_action {
     type             = "forward"
+    target_group_arn = aws_lb_target_group.frontend_tg.arn
+  }
+}
+
+# Regla path-based para /api/* → Kong
+resource "aws_lb_listener_rule" "api" {
+  listener_arn = aws_lb_listener.http.arn
+  priority     = 10
+
+  action {
+    type             = "forward"
     target_group_arn = aws_lb_target_group.kong_tg.arn
+  }
+
+  condition {
+    path_pattern {
+      values = ["/api/*"]
+    }
   }
 }
 
 ######################################
-# 8) ECS Tasks & Services (FARGATE)
+# 9) ECS Tasks & Services (FARGATE)
 ######################################
-# 8.a) Variables comunes
+# 9.a) Variables comunes
 locals {
   common_env = [
     { name = "DB_HOST", value = aws_db_instance.mysql.address },
@@ -226,7 +278,7 @@ locals {
   ]
 }
 
-# 8.b) ms-logeo
+# 9.b) ms-logeo
 resource "aws_ecs_task_definition" "ms_logeo" {
   family                   = "ms-logeo"
   requires_compatibilities = ["FARGATE"]
@@ -234,14 +286,12 @@ resource "aws_ecs_task_definition" "ms_logeo" {
   cpu                      = "256"
   memory                   = "512"
 
-  container_definitions = jsonencode([
-    {
-      name         = "ms-logeo"
-      image        = "calehu/ms-logeo:latest"
-      portMappings = [{ containerPort = 80, protocol = "tcp" }]
-      environment  = local.common_env
-    }
-  ])
+  container_definitions = jsonencode([{
+    name         = "ms-logeo"
+    image        = "calehu/ms-logeo:v2"
+    portMappings = [{ containerPort = 80, protocol = "tcp" }]
+    environment  = local.common_env
+  }])
 }
 
 resource "aws_ecs_service" "ms_logeo" {
@@ -257,14 +307,14 @@ resource "aws_ecs_service" "ms_logeo" {
     assign_public_ip = true
   }
 
-  load_balancer {
-    target_group_arn = aws_lb_target_group.frontend_tg.arn
-    container_name   = "ms-logeo"
-    container_port   = 80
+  service_registries {
+    registry_arn   = aws_service_discovery_service.ms_logeo_sd.arn
+    container_name = "ms-logeo"
+    container_port = 80
   }
 }
 
-# 8.c) ms-participantes
+# 9.c) ms-participantes
 resource "aws_ecs_task_definition" "ms_participantes" {
   family                   = "ms-participantes"
   requires_compatibilities = ["FARGATE"]
@@ -272,14 +322,12 @@ resource "aws_ecs_task_definition" "ms_participantes" {
   cpu                      = "256"
   memory                   = "512"
 
-  container_definitions = jsonencode([
-    {
-      name         = "ms-participantes"
-      image        = "calehu/ms-participantes:latest"
-      portMappings = [{ containerPort = 80, protocol = "tcp" }]
-      environment  = local.common_env
-    }
-  ])
+  container_definitions = jsonencode([{
+    name         = "ms-participantes"
+    image        = "calehu/ms-participantes:v2"
+    portMappings = [{ containerPort = 80, protocol = "tcp" }]
+    environment  = local.common_env
+  }])
 }
 
 resource "aws_ecs_service" "ms_participantes" {
@@ -295,14 +343,14 @@ resource "aws_ecs_service" "ms_participantes" {
     assign_public_ip = true
   }
 
-  load_balancer {
-    target_group_arn = aws_lb_target_group.frontend_tg.arn
-    container_name   = "ms-participantes"
-    container_port   = 80
+  service_registries {
+    registry_arn   = aws_service_discovery_service.ms_participantes_sd.arn
+    container_name = "ms-participantes"
+    container_port = 80
   }
 }
 
-# 8.d) ms-votaciones
+# 9.d) ms-votaciones
 resource "aws_ecs_task_definition" "ms_votaciones" {
   family                   = "ms-votaciones"
   requires_compatibilities = ["FARGATE"]
@@ -310,14 +358,12 @@ resource "aws_ecs_task_definition" "ms_votaciones" {
   cpu                      = "256"
   memory                   = "512"
 
-  container_definitions = jsonencode([
-    {
-      name         = "ms-votaciones"
-      image        = "calehu/ms-votaciones:latest"
-      portMappings = [{ containerPort = 80, protocol = "tcp" }]
-      environment  = local.common_env
-    }
-  ])
+  container_definitions = jsonencode([{
+    name         = "ms-votaciones"
+    image        = "calehu/ms-votaciones:v2"
+    portMappings = [{ containerPort = 80, protocol = "tcp" }]
+    environment  = local.common_env
+  }])
 }
 
 resource "aws_ecs_service" "ms_votaciones" {
@@ -333,14 +379,14 @@ resource "aws_ecs_service" "ms_votaciones" {
     assign_public_ip = true
   }
 
-  load_balancer {
-    target_group_arn = aws_lb_target_group.frontend_tg.arn
-    container_name   = "ms-votaciones"
-    container_port   = 80
+  service_registries {
+    registry_arn   = aws_service_discovery_service.ms_votaciones_sd.arn
+    container_name = "ms-votaciones"
+    container_port = 80
   }
 }
 
-# 8.e) kong
+# 9.e) kong
 resource "aws_ecs_task_definition" "kong" {
   family                   = "kong"
   requires_compatibilities = ["FARGATE"]
@@ -348,25 +394,21 @@ resource "aws_ecs_task_definition" "kong" {
   cpu                      = "256"
   memory                   = "512"
 
-  container_definitions = jsonencode([
-    {
-      name         = "kong"
-      image        = "calehu/kong:latest"
-      essential = true
-
-      portMappings = [
-        { containerPort = 8000, protocol = "tcp" },
-        { containerPort = 8001, protocol = "tcp" },
-      ]
-
-      environment = [
-        { name = "KONG_DATABASE"           , value = "off" },
-        { name = "KONG_DECLARATIVE_CONFIG" , value = "/usr/local/kong/declarative/kong.yaml" },
-        { name = "KONG_PROXY_LISTEN"       , value = "0.0.0.0:8000" },
-        { name = "KONG_ADMIN_LISTEN"       , value = "0.0.0.0:8001" },
-      ]
-    }
-  ])
+  container_definitions = jsonencode([{
+    name         = "kong"
+    image        = "calehu/kong:v2"
+    essential    = true
+    portMappings = [
+      { containerPort = 8000, protocol = "tcp" },
+      { containerPort = 8001, protocol = "tcp" },
+    ]
+    environment = [
+      { name = "KONG_DATABASE"           , value = "off" },
+      { name = "KONG_DECLARATIVE_CONFIG" , value = "/usr/local/kong/declarative/kong.yaml" },
+      { name = "KONG_PROXY_LISTEN"       , value = "0.0.0.0:8000" },
+      { name = "KONG_ADMIN_LISTEN"       , value = "0.0.0.0:8001" },
+    ]
+  }])
 }
 
 resource "aws_ecs_service" "kong" {
@@ -389,7 +431,7 @@ resource "aws_ecs_service" "kong" {
   }
 }
 
-# 8.f) frontend
+# 9.f) frontend
 resource "aws_ecs_task_definition" "frontend" {
   family                   = "frontend"
   requires_compatibilities = ["FARGATE"]
@@ -397,13 +439,11 @@ resource "aws_ecs_task_definition" "frontend" {
   cpu                      = "256"
   memory                   = "512"
 
-  container_definitions = jsonencode([
-    {
-      name         = "frontend"
-      image        = "calehu/frontend:v1.5"
-      portMappings = [{ containerPort = 80, protocol = "tcp" }]
-    }
-  ])
+  container_definitions = jsonencode([{
+    name         = "frontend"
+    image        = "calehu/frontend:v2"
+    portMappings = [{ containerPort = 80, protocol = "tcp" }]
+  }])
 }
 
 resource "aws_ecs_service" "frontend" {
@@ -427,7 +467,7 @@ resource "aws_ecs_service" "frontend" {
 }
 
 ######################################
-# 9) Bastión dentro de VPC (SSM-only)
+# 10) Bastión dentro de VPC (SSM-only)
 ######################################
 resource "aws_security_group" "bastion_sg" {
   name        = "vot-${var.environment}-bastion-sg"
@@ -454,7 +494,7 @@ resource "aws_instance" "bastion" {
 }
 
 ######################################
-# 10) Outputs
+# 11) Outputs
 ######################################
 output "db_endpoint" {
   description = "Endpoint de la instancia MySQL RDS"

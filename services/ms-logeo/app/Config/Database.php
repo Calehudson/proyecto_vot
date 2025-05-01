@@ -28,11 +28,11 @@ class Database extends Config
      */
     public array $default = [
         'DSN'          => '',
-        'hostname'     => 'db',
-        'username'     => 'user',
-        'password'     => 'password',
-        'database'     => 'votaciondb',
-        'DBDriver'     => 'MySQLi',
+        'hostname'     => env('DB_HOST', 'mysql_db'),
+        'username'     => env('DB_USER', 'myuser'),
+        'password'     => env('DB_PASS', 'BDMUR11'),
+        'database'     => env('DB_NAME', 'bdpvot'),
+        'DBDriver'     => env('DB_DRIVER', 'MySQLi'),
         'DBPrefix'     => '',
         'pConnect'     => false,
         'DBDebug'      => true,
@@ -46,6 +46,7 @@ class Database extends Config
         'port'         => 3306,
         'numberNative' => false,
     ];
+    
 
     /**
      * This database connection is used when

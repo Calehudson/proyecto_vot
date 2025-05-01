@@ -1,4 +1,4 @@
-const API_BASE = `http://${window.location.hostname}:8000`;
+const API_BASE = window.location.origin;
 
 function logea() {
     let usuario = document.getElementById('usuario').value;
