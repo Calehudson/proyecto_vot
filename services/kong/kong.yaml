@@ -1,5 +1,28 @@
 _format_version: "3.0"
 
+plugins:
+  # 1️⃣ Este plugin expone /status con HTTP 200
+  - name: status
+    enabled: true
+    protocols:
+      - http
+      - https
+    config:
+      status_path: /status
+
+  # 2️⃣ Tu plugin file-log existente
+  - name: file-log
+    enabled: true
+    protocols:
+      - grpc
+      - grpcs
+      - http
+      - https
+    config:
+      path: /var/log/kong/all_requests.log
+      reopen: false
+      custom_fields_by_lua: null
+
 consumers:
   - username: anonymous_user
   - username: usuario_externo

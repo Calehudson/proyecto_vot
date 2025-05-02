@@ -188,7 +188,8 @@ resource "aws_lb_target_group" "kong_tg" {
   target_type = "ip"
 
   health_check {
-    path    = "/"
+    path    = "/status"
+    port    = "8000"
     matcher = "200-399"
   }
 }
@@ -444,7 +445,7 @@ resource "aws_ecs_task_definition" "kong" {
 
   container_definitions = jsonencode([{
     name         = "kong"
-    image        = "calehu/kong:v2.1"
+    image        = "calehu/kong:v2.2"
     essential    = true
     portMappings = [
       { containerPort = 8000, protocol = "tcp" },
