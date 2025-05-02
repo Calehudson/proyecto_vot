@@ -55,7 +55,7 @@ resource "aws_subnet" "public" {
 
 resource "aws_security_group" "alb_sg" {
   name        = "vot-${var.environment}-alb-sg"
-  description = "Permite HTTP 80 y 8000 al ALB"
+  description = "Permite HTTP 80 al ALB"
   vpc_id      = aws_vpc.main.id
 
   ingress {
@@ -64,12 +64,7 @@ resource "aws_security_group" "alb_sg" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
-  ingress {
-    from_port   = 8000
-    to_port     = 8000
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -89,6 +84,7 @@ resource "aws_security_group" "ecs_sg" {
     protocol        = "-1"
     security_groups = [aws_security_group.alb_sg.id]
   }
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -115,6 +111,7 @@ resource "aws_security_group" "db_sg" {
     protocol        = "tcp"
     security_groups = [aws_security_group.ecs_sg.id]
   }
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -124,17 +121,18 @@ resource "aws_security_group" "db_sg" {
 }
 
 resource "aws_db_instance" "mysql" {
-  identifier              = "vot-${var.environment}-db"
-  engine                  = "mysql"
-  engine_version          = "8.0"
-  instance_class          = "db.t3.micro"
-  allocated_storage       = 20
-  username                = var.db_username
-  password                = var.db_password
-  skip_final_snapshot     = true
-  publicly_accessible     = false
-  db_subnet_group_name    = aws_db_subnet_group.db_subnets.name
-  vpc_security_group_ids  = [aws_security_group.db_sg.id]
+  identifier             = "vot-${var.environment}-db"
+  engine                 = "mysql"
+  engine_version         = "8.0"
+  instance_class         = "db.t3.micro"
+  allocated_storage      = 20
+  username               = var.db_username
+  password               = var.db_password
+  skip_final_snapshot    = true
+  publicly_accessible    = false
+  db_subnet_group_name   = aws_db_subnet_group.db_subnets.name
+  vpc_security_group_ids = [aws_security_group.db_sg.id]
+
   tags = {
     Name = "vot-${var.environment}-mysql"
   }
@@ -156,52 +154,7 @@ resource "aws_ecs_cluster" "main" {
 }
 
 ######################################
-# 7) Service Discovery (Cloud Map)
-######################################
-resource "aws_service_discovery_private_dns_namespace" "vot" {
-  name        = "vot.local"
-  description = "Namespace privado para vot-${var.environment}"
-  vpc         = aws_vpc.main.id
-}
-
-resource "aws_service_discovery_service" "ms_logeo_sd" {
-  name = "ms-logeo"
-  dns_config {
-    namespace_id = aws_service_discovery_private_dns_namespace.vot.id
-    dns_records {
-      type = "A"
-      ttl  = 10
-    }
-    routing_policy = "MULTIVALUE"
-  }
-}
-
-resource "aws_service_discovery_service" "ms_participantes_sd" {
-  name = "ms-participantes"
-  dns_config {
-    namespace_id = aws_service_discovery_private_dns_namespace.vot.id
-    dns_records {
-      type = "A"
-      ttl  = 10
-    }
-    routing_policy = "MULTIVALUE"
-  }
-}
-
-resource "aws_service_discovery_service" "ms_votaciones_sd" {
-  name = "ms-votaciones"
-  dns_config {
-    namespace_id = aws_service_discovery_private_dns_namespace.vot.id
-    dns_records {
-      type = "A"
-      ttl  = 10
-    }
-    routing_policy = "MULTIVALUE"
-  }
-}
-
-######################################
-# 8) Application Load Balancer (ALB)
+# 7) Application Load Balancer (ALB)
 ######################################
 resource "aws_lb" "main" {
   name               = "vot-${var.environment}-alb"
@@ -236,7 +189,7 @@ resource "aws_lb_target_group" "kong_tg" {
   }
 }
 
-# Listener principal en 80: front por defecto
+# Listener principal en puerto 80 → frontend
 resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.main.arn
   port              = 80
@@ -248,7 +201,7 @@ resource "aws_lb_listener" "http" {
   }
 }
 
-# Regla path-based para /api/* → Kong
+# Regla path-based: /api/* → kong
 resource "aws_lb_listener_rule" "api" {
   listener_arn = aws_lb_listener.http.arn
   priority     = 10
@@ -266,19 +219,128 @@ resource "aws_lb_listener_rule" "api" {
 }
 
 ######################################
-# 9) ECS Tasks & Services (FARGATE)
+# 7.b) Target Groups para microservicios
 ######################################
-# 9.a) Variables comunes
+
+resource "aws_lb_target_group" "ms_logeo_tg" {
+  name        = "ms-logeo-${var.environment}-tg"
+  port        = 80
+  protocol    = "HTTP"
+  vpc_id      = aws_vpc.main.id
+  target_type = "ip"
+
+  health_check {
+    path    = "/api/logeo"
+    matcher = "200-399"
+  }
+}
+
+resource "aws_lb_target_group" "ms_participantes_tg" {
+  name        = "ms-participantes-${var.environment}-tg"
+  port        = 80
+  protocol    = "HTTP"
+  vpc_id      = aws_vpc.main.id
+  target_type = "ip"
+
+  health_check {
+    path    = "/api/participantes"
+    matcher = "200-399"
+  }
+}
+
+resource "aws_lb_target_group" "ms_votaciones_tg" {
+  name        = "ms-votaciones-${var.environment}-tg"
+  port        = 80
+  protocol    = "HTTP"
+  vpc_id      = aws_vpc.main.id
+  target_type = "ip"
+
+  health_check {
+    path    = "/api/votaciones"
+    matcher = "200-399"
+  }
+}
+
+######################################
+# 7.c) Listener Rules específicas
+######################################
+
+# Precedencia alta: /api/logeo* → ms-logeo
+resource "aws_lb_listener_rule" "logeo" {
+  listener_arn = aws_lb_listener.http.arn
+  priority     = 5
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.ms_logeo_tg.arn
+  }
+
+  condition {
+    path_pattern {
+      values = [
+        "/api/logeo",
+        "/api/logeo/*",
+      ]
+    }
+  }
+}
+
+# Precedencia media: /api/participantes* → ms-participantes
+resource "aws_lb_listener_rule" "participantes" {
+  listener_arn = aws_lb_listener.http.arn
+  priority     = 6
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.ms_participantes_tg.arn
+  }
+
+  condition {
+    path_pattern {
+      values = [
+        "/api/participantes",
+        "/api/participantes/*",
+      ]
+    }
+  }
+}
+
+# Precedencia baja: /api/votaciones* → ms-votaciones
+resource "aws_lb_listener_rule" "votaciones" {
+  listener_arn = aws_lb_listener.http.arn
+  priority     = 7
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.ms_votaciones_tg.arn
+  }
+
+  condition {
+    path_pattern {
+      values = [
+        "/api/votaciones",
+        "/api/votaciones/*",
+      ]
+    }
+  }
+}
+
+# (Deja tu regla genérica /api/* → kong_tg con priority = 10)
+
+
+######################################
+# 8) ECS Tasks & Services (FARGATE)
+######################################
 locals {
   common_env = [
-    { name = "DB_HOST", value = aws_db_instance.mysql.address },
-    { name = "DB_USER", value = var.db_username },
-    { name = "DB_PASS", value = var.db_password },
-    { name = "DB_NAME", value = "votaciondb" },
+    { name = "DB_HOST",  value = aws_db_instance.mysql.address },
+    { name = "DB_USER",  value = var.db_username },
+    { name = "DB_PASS",  value = var.db_password },
+    { name = "DB_NAME",  value = "votaciondb" },
   ]
 }
 
-# 9.b) ms-logeo
+# --- ms-logeo (sin registrarse en ELB, Kong lo llamará por host fijo) ---
 resource "aws_ecs_task_definition" "ms_logeo" {
   family                   = "ms-logeo"
   requires_compatibilities = ["FARGATE"]
@@ -306,15 +368,9 @@ resource "aws_ecs_service" "ms_logeo" {
     security_groups  = [aws_security_group.ecs_sg.id]
     assign_public_ip = true
   }
-
-  service_registries {
-    registry_arn   = aws_service_discovery_service.ms_logeo_sd.arn
-    container_name = "ms-logeo"
-    container_port = 80
-  }
 }
 
-# 9.c) ms-participantes
+# --- ms-participantes ---
 resource "aws_ecs_task_definition" "ms_participantes" {
   family                   = "ms-participantes"
   requires_compatibilities = ["FARGATE"]
@@ -342,15 +398,9 @@ resource "aws_ecs_service" "ms_participantes" {
     security_groups  = [aws_security_group.ecs_sg.id]
     assign_public_ip = true
   }
-
-  service_registries {
-    registry_arn   = aws_service_discovery_service.ms_participantes_sd.arn
-    container_name = "ms-participantes"
-    container_port = 80
-  }
 }
 
-# 9.d) ms-votaciones
+# --- ms-votaciones ---
 resource "aws_ecs_task_definition" "ms_votaciones" {
   family                   = "ms-votaciones"
   requires_compatibilities = ["FARGATE"]
@@ -378,15 +428,9 @@ resource "aws_ecs_service" "ms_votaciones" {
     security_groups  = [aws_security_group.ecs_sg.id]
     assign_public_ip = true
   }
-
-  service_registries {
-    registry_arn   = aws_service_discovery_service.ms_votaciones_sd.arn
-    container_name = "ms-votaciones"
-    container_port = 80
-  }
 }
 
-# 9.e) kong
+# --- kong (registrado en el ALB en /api/*) ---
 resource "aws_ecs_task_definition" "kong" {
   family                   = "kong"
   requires_compatibilities = ["FARGATE"]
@@ -396,7 +440,7 @@ resource "aws_ecs_task_definition" "kong" {
 
   container_definitions = jsonencode([{
     name         = "kong"
-    image        = "calehu/kong:v2"
+    image        = "calehu/kong:v2.1"
     essential    = true
     portMappings = [
       { containerPort = 8000, protocol = "tcp" },
@@ -431,7 +475,7 @@ resource "aws_ecs_service" "kong" {
   }
 }
 
-# 9.f) frontend
+# --- frontend (registrado en el ALB en /) ---
 resource "aws_ecs_task_definition" "frontend" {
   family                   = "frontend"
   requires_compatibilities = ["FARGATE"]
@@ -467,7 +511,7 @@ resource "aws_ecs_service" "frontend" {
 }
 
 ######################################
-# 10) Bastión dentro de VPC (SSM-only)
+# 9) Bastión dentro de VPC (SSM-only)
 ######################################
 resource "aws_security_group" "bastion_sg" {
   name        = "vot-${var.environment}-bastion-sg"
@@ -488,13 +532,14 @@ resource "aws_instance" "bastion" {
   subnet_id              = aws_subnet.public[0].id
   vpc_security_group_ids = [aws_security_group.bastion_sg.id]
   iam_instance_profile   = "LabInstanceProfile"
+
   tags = {
     Name = "vot-${var.environment}-bastion"
   }
 }
 
 ######################################
-# 11) Outputs
+# 10) Outputs
 ######################################
 output "db_endpoint" {
   description = "Endpoint de la instancia MySQL RDS"

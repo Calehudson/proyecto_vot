@@ -27,19 +27,18 @@ plugins:
 
 services:
   - name: ms-logeo
-    host: ms-logeo.vot.local
+    # Upstream is the same ALB that fronts the services
+    host: vot-dev-alb-9315723.us-east-1.elb.amazonaws.com
     port: 80
     protocol: http
     connect_timeout: 60000
-    read_timeout: 60000
-    write_timeout: 60000
+    read_timeout:    60000
+    write_timeout:   60000
     retries: 5
     plugins:
       - name: cors
         enabled: true
         protocols:
-          - grpc
-          - grpcs
           - http
           - https
         config:
@@ -47,11 +46,7 @@ services:
             - http://vot-dev-alb-9315723.us-east-1.elb.amazonaws.com
           methods:
             - GET
-            - HEAD
-            - PUT
-            - PATCH
             - POST
-            - DELETE
             - OPTIONS
           headers:
             - Accept
@@ -64,32 +59,29 @@ services:
           max_age: 3600
           preflight_continue: false
     routes:
-      - id: 4e1d4b8c-fea2-4858-83d9-cd53249ce7cc
+      - id: logeo-route
         protocols:
           - http
           - https
         paths:
-          - "/api/logeo"
-          - "/api/logeo/*"
+          - /api/logeo
+          - /api/logeo/*
         strip_path: true
         preserve_host: false
         path_handling: v0
-        https_redirect_status_code: 426
 
   - name: ms-participantes
-    host: ms-participantes.vot.local
+    host: vot-dev-alb-9315723.us-east-1.elb.amazonaws.com
     port: 80
     protocol: http
     connect_timeout: 60000
-    read_timeout: 60000
-    write_timeout: 60000
+    read_timeout:    60000
+    write_timeout:   60000
     retries: 5
     plugins:
       - name: cors
         enabled: true
         protocols:
-          - grpc
-          - grpcs
           - http
           - https
         config:
@@ -97,11 +89,6 @@ services:
             - http://vot-dev-alb-9315723.us-east-1.elb.amazonaws.com
           methods:
             - GET
-            - HEAD
-            - PUT
-            - PATCH
-            - POST
-            - DELETE
             - OPTIONS
           headers:
             - Accept
@@ -114,32 +101,29 @@ services:
           max_age: 3600
           preflight_continue: false
     routes:
-      - id: c9115216-f018-44fe-8caf-01eb9087b329
+      - id: participantes-route
         protocols:
           - http
           - https
         paths:
-          - "/api/participantes"
-          - "/api/participantes/*"
+          - /api/participantes
+          - /api/participantes/*
         strip_path: true
         preserve_host: false
         path_handling: v0
-        https_redirect_status_code: 426
 
   - name: ms-votaciones
-    host: ms-votaciones.vot.local
+    host: vot-dev-alb-9315723.us-east-1.elb.amazonaws.com
     port: 80
     protocol: http
     connect_timeout: 60000
-    read_timeout: 60000
-    write_timeout: 60000
+    read_timeout:    60000
+    write_timeout:   60000
     retries: 5
     plugins:
       - name: cors
         enabled: true
         protocols:
-          - grpc
-          - grpcs
           - http
           - https
         config:
@@ -147,9 +131,6 @@ services:
             - http://vot-dev-alb-9315723.us-east-1.elb.amazonaws.com
           methods:
             - GET
-            - HEAD
-            - PUT
-            - PATCH
             - POST
             - DELETE
             - OPTIONS
@@ -164,53 +145,31 @@ services:
           max_age: 3600
           preflight_continue: false
     routes:
-      # Ruta protegida con JWT o API-Key
-      - id: f1c3b406-8343-4e70-85a4-6a21de8fbfc9
+      - id: votaciones-list-route
         protocols:
           - http
           - https
         paths:
-          - "/api/votaciones/listavotaciones"
+          - /api/votaciones/listavotaciones
         strip_path: true
         preserve_host: false
         path_handling: v0
-        https_redirect_status_code: 426
         plugins:
           - name: jwt
             enabled: true
-            protocols:
-              - grpc
-              - grpcs
-              - http
-              - https
             config:
               anonymous: e12b4338-3a5d-4378-a73a-5089142de66c
               uri_param_names:
                 - jwt
               secret_is_base64: false
-              maximum_expiration: 0
           - name: key-auth
             enabled: true
-            protocols:
-              - grpc
-              - grpcs
-              - http
-              - https
             config:
               anonymous: e12b4338-3a5d-4378-a73a-5089142de66c
               key_names:
                 - apikey
-              hide_credentials: false
-              key_in_header: true
-              key_in_query: true
-              run_on_preflight: true
           - name: pre-function
             enabled: true
-            protocols:
-              - grpc
-              - grpcs
-              - http
-              - https
             config:
               access:
                 - |
@@ -223,15 +182,13 @@ services:
                   if not has_jwt and not has_key then
                     return kong.response.exit(401, { message = "Unauthorized: se requiere JWT o API-Key" })
                   end
-      # Rutas públicas para todos los demás endpoints
-      - id: 54306aff-483b-4c5d-af78-10e9878b8366
+      - id: votaciones-default-route
         protocols:
           - http
           - https
         paths:
-          - "/api/votaciones"
-          - "/api/votaciones/*"
+          - /api/votaciones
+          - /api/votaciones/*
         strip_path: true
         preserve_host: false
         path_handling: v0
-        https_redirect_status_code: 426
