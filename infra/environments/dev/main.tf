@@ -434,13 +434,8 @@ resource "aws_ecs_service" "ms_votaciones" {
     assign_public_ip = true
   }
 }
-# 1️⃣ Log Group en CloudWatch para Kong
-resource "aws_cloudwatch_log_group" "kong" {
-  name              = "/ecs/vot-${var.environment}/kong"
-  retention_in_days = 7
-}
 
-# 2️⃣ Task Definition de Kong con awslogs habilitado
+# --- kong (registrado en el ALB en /api/*) ---
 resource "aws_ecs_task_definition" "kong" {
   family                   = "kong"
   requires_compatibilities = ["FARGATE"]
@@ -448,37 +443,23 @@ resource "aws_ecs_task_definition" "kong" {
   cpu                      = "256"
   memory                   = "512"
 
-  container_definitions = jsonencode([
-    {
-      name         = "kong"
-      image        = "calehu/kong:v2.3"
-      essential    = true
-      portMappings = [
-        { containerPort = 8000, protocol = "tcp" },
-        { containerPort = 8001, protocol = "tcp" }
-      ]
-
-      # ─── CONFIGURACIÓN DE LOGS A CLOUDWATCH ─────────────────────────
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          awslogs-group         = aws_cloudwatch_log_group.kong.name
-          awslogs-region        = var.aws_region
-          awslogs-stream-prefix = "kong"
-        }
-      }
-
-      environment = [
-        { name = "KONG_DATABASE"           , value = "off"                                       },
-        { name = "KONG_DECLARATIVE_CONFIG" , value = "/usr/local/kong/declarative/kong.yaml"   },
-        { name = "KONG_PROXY_LISTEN"       , value = "0.0.0.0:8000"                            },
-        { name = "KONG_ADMIN_LISTEN"       , value = "0.0.0.0:8001"                            }
-      ]
-    }
-  ])
+  container_definitions = jsonencode([{
+    name         = "kong"
+    image        = "calehu/kong:v2.4"
+    essential    = true
+    portMappings = [
+      { containerPort = 8000, protocol = "tcp" },
+      { containerPort = 8001, protocol = "tcp" },
+    ]
+    environment = [
+      { name = "KONG_DATABASE"           , value = "off" },
+      { name = "KONG_DECLARATIVE_CONFIG" , value = "/usr/local/kong/declarative/kong.yaml" },
+      { name = "KONG_PROXY_LISTEN"       , value = "0.0.0.0:8000" },
+      { name = "KONG_ADMIN_LISTEN"       , value = "0.0.0.0:8001" },
+    ]
+  }])
 }
 
-# 3️⃣ Servicio de ECS para Kong (sin cambios)
 resource "aws_ecs_service" "kong" {
   name            = "kong"
   cluster         = aws_ecs_cluster.main.id
@@ -498,7 +479,6 @@ resource "aws_ecs_service" "kong" {
     container_port   = 8000
   }
 }
-
 
 # --- frontend (registrado en el ALB en /) ---
 resource "aws_ecs_task_definition" "frontend" {
