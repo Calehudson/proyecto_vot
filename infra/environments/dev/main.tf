@@ -54,7 +54,7 @@ resource "aws_subnet" "public" {
 }
 
 resource "aws_security_group" "alb_sg" {
-  name        = "vot-${var.environment}-alb-sg"
+  name_prefix = "vot-${var.environment}-alb-sg-"
   description = "Permite HTTP 80 al ALB"
   vpc_id      = aws_vpc.main.id
 
