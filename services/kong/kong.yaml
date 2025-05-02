@@ -35,22 +35,8 @@ consumers:
         key: 8f01T8gMPgvJP8lf5ZVP738wbZZPzCZT
         secret: LFQTyqqHAyJEGTSqwfUjDua7Az8d9Bbu
 
-plugins:
-  - name: file-log
-    enabled: true
-    protocols:
-      - grpc
-      - grpcs
-      - http
-      - https
-    config:
-      path: /var/log/kong/all_requests.log
-      reopen: false
-      custom_fields_by_lua: null
-
 services:
   - name: ms-logeo
-    # Upstream is the same ALB that fronts the services
     host: vot-dev-alb-9315723.us-east-1.elb.amazonaws.com
     port: 80
     protocol: http
@@ -215,3 +201,4 @@ services:
         strip_path: true
         preserve_host: false
         path_handling: v0
+
