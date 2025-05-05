@@ -30,6 +30,13 @@
 # DATABASE
 #--------------------------------------------------------------------
 
+database.default.DBDriver     = MySQLi
+database.default.hostname     = ${DB_HOST}
+database.default.database     = ${DB_NAME}
+database.default.username     = ${DB_USER}
+database.default.password     = ${DB_PASS}
+database.default.port         = 3306
+
 
 #--------------------------------------------------------------------
 # CONTENT SECURITY POLICY

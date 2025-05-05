@@ -1,46 +1,49 @@
-# Deshabilita listado de directorios
-Options -Indexes
-
-# Detectar HTTPS desde el ALB (cabecera X-Forwarded-Proto)
-<IfModule mod_setenvif.c>
-    SetEnvIf X-Forwarded-Proto https HTTPS=on
-</IfModule>
+# Disable directory browsing
+Options All -Indexes
 
 # ----------------------------------------------------------------------
 # Rewrite engine
 # ----------------------------------------------------------------------
+
+# Turning on the rewrite engine is necessary for the following rules and features.
+# FollowSymLinks must be enabled for this to work.
 <IfModule mod_rewrite.c>
-    Options +FollowSymlinks
-    RewriteEngine On
-    # RewriteBase /          # Descomenta si sirves desde subdirectorio
+	Options +FollowSymlinks
+	RewriteEngine On
 
-    # 1) Elimina slash final en URLs de directorio
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteCond %{REQUEST_URI} (.+)/$
-    RewriteRule ^ %1 [L,R=301]
+	# If you installed CodeIgniter in a subfolder, you will need to
+	# change the following line to match the subfolder you need.
+	# http://httpd.apache.org/docs/current/mod/mod_rewrite.html#rewritebase
+	# RewriteBase /
 
-    # 2) Redirige www → no-www, preservando esquema (http/https)
-    RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
-    RewriteRule ^ %{REQUEST_SCHEME}://%1%{REQUEST_URI} [R=301,L]
+	# Redirect Trailing Slashes...
+	RewriteCond %{REQUEST_FILENAME} !-d
+	RewriteCond %{REQUEST_URI} (.+)/$
+	RewriteRule ^ %1 [L,R=301]
 
-    # 3) Si no es archivo ni carpeta, pasa a index.php
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^ index.php/$1 [L,NC,QSA]
+	# Rewrite "www.example.com -> example.com"
+	RewriteCond %{HTTPS} !=on
+	RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
+	RewriteRule ^ http://%1%{REQUEST_URI} [R=301,L]
 
-    # 4) Asegura que se pase el header Authorization a PHP
-    RewriteCond %{HTTP:Authorization} .
-    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+	# Checks to see if the user is attempting to access a valid file,
+	# such as an image or css document, if this isn't true it sends the
+	# request to the front controller, index.php
+	RewriteCond %{REQUEST_FILENAME} !-f
+	RewriteCond %{REQUEST_FILENAME} !-d
+	RewriteRule ^([\s\S]*)$ index.php/$1 [L,NC,QSA]
+
+	# Ensure Authorization header is passed along
+	RewriteCond %{HTTP:Authorization} .
+	RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 </IfModule>
 
 <IfModule !mod_rewrite.c>
-    # Sin mod_rewrite, todo 404 va a index.php
-    ErrorDocument 404 /index.php
+	# If we don't have mod_rewrite installed, all 404's
+	# can be sent to index.php, and everything works as normal.
+	ErrorDocument 404 index.php
 </IfModule>
 
-# Quita la firma del servidor
-ServerSignature Off
-
-# Define index.php como página por defecto
-DirectoryIndex index.php
-
+# Disable server signature start
+	ServerSignature Off
+# Disable server signature end

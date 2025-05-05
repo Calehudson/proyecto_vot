@@ -1,40 +1,24 @@
 FROM php:8.2-apache
 
-# 1) Instala extensiones y limpia caché de apt
-RUN apt-get update \
-  && apt-get install -y \
-       libpng-dev \
-       libjpeg-dev \
-       libfreetype6-dev \
-       libzip-dev \
-       libicu-dev \
-       zip unzip \
-  && docker-php-ext-install \
-       mysqli \
-       pdo \
-       pdo_mysql \
-       zip \
-       intl \
-  && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y \
+    libpng-dev \
+    libjpeg-dev \
+    libfreetype6-dev \
+    zip unzip \
+    libzip-dev \
+    libicu-dev \
+    && docker-php-ext-install mysqli pdo pdo_mysql zip intl
 
-# 2) Habilita mod_rewrite y AllowOverride All en la raíz
-RUN a2enmod rewrite \
-  && printf "\
-<Directory /var/www/html>\n\
-    AllowOverride All\n\
-</Directory>\n" \
-     > /etc/apache2/conf-available/override.conf \
-  && a2enconf override
+RUN a2enmod rewrite
 
-# 3) Copia todo el código al root de Apache
-COPY . /var/www/html
+COPY . /var/www/html/
+# Configuras Apache para que sirva la carpeta public/
+RUN sed -ri -e 's!/var/www/html!/var/www/html/public!g' \
+      /etc/apache2/sites-available/*.conf \
+ && a2enmod rewrite
+WORKDIR /var/www/html/public
 
-# 4) Ajusta permisos
 RUN chown -R www-data:www-data /var/www/html
 
-# 5) Trabaja en la raíz
-WORKDIR /var/www/html
-
 EXPOSE 80
-
 
