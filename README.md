@@ -6,7 +6,6 @@ Este documento describe el procedimiento para provisionar la infraestructura en 
 
 ## Prerrequisitos
 
-- Cuenta AWS con permisos de IAM para crear y gestionar recursos (VPC, ECS, RDS, S3, DynamoDB, etc.).
 - Repositorio Git clonado en CloudShell o acceso con `git pull`.
 - Archivo `terraform.tfvars` con las variables necesarias (`db_username`, `db_password`, `ecs_exec_role_arn`, etc.).
 - Backend de Terraform configurado en S3 y con locking en DynamoDB.
