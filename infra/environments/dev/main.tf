@@ -167,7 +167,7 @@ resource "aws_lb" "main" {
 
 resource "aws_lb_target_group" "frontend_tg" {
   name        = "frontend-${var.environment}-tg"
-  port        = 80
+  port        = 8080
   protocol    = "HTTP"
   vpc_id      = aws_vpc.main.id
   target_type = "ip"
@@ -401,7 +401,7 @@ resource "aws_ecs_task_definition" "frontend" {
     {
       name         = "frontend"
       image        = "calehu/frontend:v1.5"
-      portMappings = [{ containerPort = 80, protocol = "tcp" }]
+      portMappings = [{ containerPort = 8080, protocol = "tcp" }]
     }
   ])
 }
@@ -422,7 +422,7 @@ resource "aws_ecs_service" "frontend" {
   load_balancer {
     target_group_arn = aws_lb_target_group.frontend_tg.arn
     container_name   = "frontend"
-    container_port   = 80
+    container_port   = 8080
   }
 }
 
