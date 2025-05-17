@@ -256,12 +256,6 @@ resource "aws_ecs_service" "ms_logeo" {
     security_groups  = [aws_security_group.ecs_sg.id]
     assign_public_ip = true
   }
-
-  load_balancer {
-    target_group_arn = aws_lb_target_group.frontend_tg.arn
-    container_name   = "ms-logeo"
-    container_port   = 80
-  }
 }
 
 # 8.c) ms-participantes
@@ -294,12 +288,6 @@ resource "aws_ecs_service" "ms_participantes" {
     security_groups  = [aws_security_group.ecs_sg.id]
     assign_public_ip = true
   }
-
-  load_balancer {
-    target_group_arn = aws_lb_target_group.frontend_tg.arn
-    container_name   = "ms-participantes"
-    container_port   = 80
-  }
 }
 
 # 8.d) ms-votaciones
@@ -331,12 +319,6 @@ resource "aws_ecs_service" "ms_votaciones" {
     subnets          = aws_subnet.public[*].id
     security_groups  = [aws_security_group.ecs_sg.id]
     assign_public_ip = true
-  }
-
-  load_balancer {
-    target_group_arn = aws_lb_target_group.frontend_tg.arn
-    container_name   = "ms-votaciones"
-    container_port   = 80
   }
 }
 
