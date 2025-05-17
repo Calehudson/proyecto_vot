@@ -173,7 +173,7 @@ resource "aws_lb_target_group" "frontend_tg" {
   target_type = "ip"
 
   health_check {
-    path    = "/"
+    path    = "/health.php"
     matcher = "200-399"
   }
 }
