@@ -1,6 +1,6 @@
+# .github/workflows/ci-cd.yml
 name: CI/CD Terraform en AWS
 
-# Desencadena el workflow en cada push a main
 on:
   push:
     branches:
@@ -8,19 +8,18 @@ on:
 
 jobs:
   terraform:
-    name: Plan & Apply
+    name: Plan & Apply Terraform
     runs-on: ubuntu-latest
+
+    # <-- aquí le dices al runner dónde buscar los .tf
     defaults:
       run:
-        # Ajusta si tu Terraform está en subcarpeta, p.ej. infra/
-        working-directory: ./
+        working-directory: infra/environments/dev
 
     steps:
-      # 1) Clona el código
       - name: 📥 Checkout code
         uses: actions/checkout@v3
 
-      # 2) Inyecta las credenciales AWS desde tus secrets
       - name: ⚙️ Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -29,21 +28,17 @@ jobs:
           aws-session-token:     ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region:            ${{ secrets.AWS_REGION }}
 
-      # 3) Instala Terraform
       - name: 🔧 Setup Terraform
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.5.0
 
-      # 4) Inicializa Terraform (incluye backend S3)
       - name: 🏗️ Terraform Init
         run: terraform init -input=false
 
-      # 5) Crea un plan
       - name: 🔍 Terraform Plan
         run: terraform plan -out=plan.tfplan
 
-      # 6) Aplica el plan (solo en main)
       - name: 🚀 Terraform Apply
         if: github.ref == 'refs/heads/main'
         run: terraform apply -auto-approve plan.tfplan
