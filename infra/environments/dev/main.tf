@@ -382,7 +382,7 @@ resource "aws_ecs_task_definition" "frontend" {
   container_definitions = jsonencode([
     {
       name         = "frontend"
-      image        = "calehu/frontend:v2.1"
+      image        = "calehu/frontend:v2.2"
       portMappings = [{ containerPort = 8080, protocol = "tcp" }]
     }
   ])

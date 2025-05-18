@@ -26,7 +26,7 @@ class App extends BaseConfig
      */
     #public $baseURL = 'http://localhost:8080/';
     
-    public $baseURL = 'http://vot-dev-alb-9315723.us-east-1.elb.amazonaws.com/';
+    public $baseURL = 'http://vot-dev-alb-728500045.us-east-1.elb.amazonaws.com/';
 
 
     /**
