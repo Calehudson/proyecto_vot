@@ -167,13 +167,13 @@ resource "aws_lb" "main" {
 
 resource "aws_lb_target_group" "frontend_tg" {
   name        = "frontend-${var.environment}-tg"
-  port        = 8080
+  port        = 80
   protocol    = "HTTP"
   vpc_id      = aws_vpc.main.id
   target_type = "ip"
 
   health_check {
-    path    = "/health.php"
+    path    = "/"
     matcher = "200-399"
   }
 }
@@ -383,7 +383,7 @@ resource "aws_ecs_task_definition" "frontend" {
     {
       name         = "frontend"
       image        = "calehu/frontend:v2.2"
-      portMappings = [{ containerPort = 8080, protocol = "tcp" }]
+      portMappings = [{ containerPort = 80, protocol = "tcp" }]
     }
   ])
 }
@@ -404,7 +404,7 @@ resource "aws_ecs_service" "frontend" {
   load_balancer {
     target_group_arn = aws_lb_target_group.frontend_tg.arn
     container_name   = "frontend"
-    container_port   = 8080
+    container_port   = 80
   }
 }
 
