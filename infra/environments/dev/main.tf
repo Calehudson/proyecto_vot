@@ -167,13 +167,13 @@ resource "aws_lb" "main" {
 
 resource "aws_lb_target_group" "frontend_tg" {
   name        = "frontend-${var.environment}-tg"
-  port        = 80
+  port        = 8080
   protocol    = "HTTP"
   vpc_id      = aws_vpc.main.id
   target_type = "ip"
 
   health_check {
-    path    = "/"
+    path    = "/health.php"
     matcher = "200-399"
   }
 }
@@ -256,12 +256,6 @@ resource "aws_ecs_service" "ms_logeo" {
     security_groups  = [aws_security_group.ecs_sg.id]
     assign_public_ip = true
   }
-
-  load_balancer {
-    target_group_arn = aws_lb_target_group.frontend_tg.arn
-    container_name   = "ms-logeo"
-    container_port   = 80
-  }
 }
 
 # 8.c) ms-participantes
@@ -294,12 +288,6 @@ resource "aws_ecs_service" "ms_participantes" {
     security_groups  = [aws_security_group.ecs_sg.id]
     assign_public_ip = true
   }
-
-  load_balancer {
-    target_group_arn = aws_lb_target_group.frontend_tg.arn
-    container_name   = "ms-participantes"
-    container_port   = 80
-  }
 }
 
 # 8.d) ms-votaciones
@@ -331,12 +319,6 @@ resource "aws_ecs_service" "ms_votaciones" {
     subnets          = aws_subnet.public[*].id
     security_groups  = [aws_security_group.ecs_sg.id]
     assign_public_ip = true
-  }
-
-  load_balancer {
-    target_group_arn = aws_lb_target_group.frontend_tg.arn
-    container_name   = "ms-votaciones"
-    container_port   = 80
   }
 }
 
@@ -401,7 +383,7 @@ resource "aws_ecs_task_definition" "frontend" {
     {
       name         = "frontend"
       image        = "calehu/frontend:v2.2"
-      portMappings = [{ containerPort = 80, protocol = "tcp" }]
+      portMappings = [{ containerPort = 8080, protocol = "tcp" }]
     }
   ])
 }
@@ -422,7 +404,7 @@ resource "aws_ecs_service" "frontend" {
   load_balancer {
     target_group_arn = aws_lb_target_group.frontend_tg.arn
     container_name   = "frontend"
-    container_port   = 80
+    container_port   = 8080
   }
 }
 
