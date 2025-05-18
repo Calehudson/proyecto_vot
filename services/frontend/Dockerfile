@@ -12,24 +12,14 @@ RUN apt-get update && apt-get install -y \
 RUN a2enmod rewrite
 
 COPY . /var/www/html/
-# 1) Priorizar index.php
-RUN sed -ri \
-  -e 's/(DirectoryIndex )(.+)/\1index.php \2/' \
-  /etc/apache2/mods-enabled/dir.conf
-
-# 2) Desactivar MultiViews
-RUN sed -ri \
-  -e '/<Directory \/var\/www\/>/,/<\/Directory>/ s/Options Indexes FollowSymLinks/Options -MultiViews +FollowSymLinks/' \
-  /etc/apache2/apache2.conf
-
-# 3) Permitir .htaccess (AllowOverride All)
-RUN sed -ri \
-  -e '/<Directory \/var\/www\/>/,/<\/Directory>/ s/AllowOverride None/AllowOverride All/' \
-  /etc/apache2/apache2.conf
-
-WORKDIR /var/www/html/
+# Configuras Apache para que sirva la carpeta public/
+RUN sed -ri -e 's!/var/www/html!/var/www/html/public!g' \
+      /etc/apache2/sites-available/*.conf \
+ && a2enmod rewrite
+WORKDIR /var/www/html/public
 
 RUN chown -R www-data:www-data /var/www/html
 
 EXPOSE 80
+
 
