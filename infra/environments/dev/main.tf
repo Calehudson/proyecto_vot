@@ -70,6 +70,12 @@ resource "aws_security_group" "alb_sg" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
+  ingress {
+    from_port   = 3000
+    to_port     = 3000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
   egress {
     from_port   = 0
     to_port     = 0
@@ -148,6 +154,33 @@ resource "aws_ecr_repository" "repos" {
   name     = "${each.key}-${var.environment}"
 }
 
+
+######################################
+# 6.0) CloudWatch Log Groups
+######################################
+
+resource "aws_cloudwatch_log_group" "ecs_frontend" {
+  name              = "/ecs/${aws_ecs_cluster.main.name}/frontend"
+  retention_in_days = 14
+}
+resource "aws_cloudwatch_log_group" "ecs_kong" {
+  name              = "/ecs/${aws_ecs_cluster.main.name}/kong"
+  retention_in_days = 14
+}
+resource "aws_cloudwatch_log_group" "ecs_ms-logeo" {
+  name              = "/ecs/${aws_ecs_cluster.main.name}/ms-logeo"
+  retention_in_days = 14
+}
+resource "aws_cloudwatch_log_group" "ecs_ms-participantes" {
+  name              = "/ecs/${aws_ecs_cluster.main.name}/ms-participantes"
+  retention_in_days = 14
+}
+resource "aws_cloudwatch_log_group" "ecs_ms-votaciones" {
+  name              = "/ecs/${aws_ecs_cluster.main.name}/ms-votaciones"
+  retention_in_days = 14
+}
+
+
 ######################################
 # 6) ECS Cluster
 ######################################
@@ -210,6 +243,19 @@ resource "aws_lb_target_group" "kong_tg" {
   }
 }
 
+resource "aws_lb_target_group" "grafana_tg" {
+  name        = "grafana-${var.environment}-tg"
+  port        = 3000
+  protocol    = "HTTP"
+  vpc_id      = aws_vpc.main.id
+  target_type = "ip"
+
+  health_check {
+    path    = "/login"
+    matcher = "200-399"
+  }
+}
+
 resource "aws_lb_listener" "kong_listener" {
   load_balancer_arn = aws_lb.main.arn
   port              = 8000
@@ -218,6 +264,17 @@ resource "aws_lb_listener" "kong_listener" {
   default_action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.kong_tg.arn
+  }
+}
+
+resource "aws_lb_listener" "grafana_listener" {
+  load_balancer_arn = aws_lb.main.arn
+  port              = 3000
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.grafana_tg.arn
   }
 }
 
@@ -248,6 +305,15 @@ resource "aws_ecs_task_definition" "ms_logeo" {
       image        = "calehu/ms-logeo:latest"
       portMappings = [{ containerPort = 80, protocol = "tcp" }]
       environment  = local.common_env
+
+      logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+          awslogs-group         = aws_cloudwatch_log_group.ecs_ms-logeo.name
+          awslogs-region        = var.aws_region
+          awslogs-stream-prefix = "ecs"
+        }
+      }
     }
   ])
 }
@@ -280,6 +346,15 @@ resource "aws_ecs_task_definition" "ms_participantes" {
       image        = "calehu/ms-participantes:latest"
       portMappings = [{ containerPort = 80, protocol = "tcp" }]
       environment  = local.common_env
+
+      logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+          awslogs-group         = aws_cloudwatch_log_group.ecs_ms-participantes.name
+          awslogs-region        = var.aws_region
+          awslogs-stream-prefix = "ecs"
+        }
+      }
     }
   ])
 }
@@ -312,6 +387,15 @@ resource "aws_ecs_task_definition" "ms_votaciones" {
       image        = "calehu/ms-votaciones:latest"
       portMappings = [{ containerPort = 80, protocol = "tcp" }]
       environment  = local.common_env
+
+      logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+          awslogs-group         = aws_cloudwatch_log_group.ecs_ms-votaciones.name
+          awslogs-region        = var.aws_region
+          awslogs-stream-prefix = "ecs"
+        }
+      }
     }
   ])
 }
@@ -343,6 +427,15 @@ resource "aws_ecs_task_definition" "kong" {
       name         = "kong"
       image        = "calehu/kong:latest"
       essential = true
+
+      logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+          awslogs-group         = aws_cloudwatch_log_group.ecs_kong.name
+          awslogs-region        = var.aws_region
+          awslogs-stream-prefix = "ecs"
+        }
+      }
 
       portMappings = [
         { containerPort = 8000, protocol = "tcp" },
@@ -392,6 +485,15 @@ resource "aws_ecs_task_definition" "frontend" {
       name         = "frontend"
       image        = "calehu/frontend:v2.9"
       portMappings = [{ containerPort = 80, protocol = "tcp" }]
+
+      logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+          awslogs-group         = aws_cloudwatch_log_group.ecs_frontend.name
+          awslogs-region        = var.aws_region
+          awslogs-stream-prefix = "ecs"
+        }
+      }
     }
   ])
 }
@@ -454,4 +556,74 @@ output "db_endpoint" {
 output "bastion_id" {
   description = "ID de la instancia bastión para SSM"
   value       = aws_instance.bastion.id
+}
+
+######################################
+# 11) Grafana en ECS (Fargate)
+######################################
+
+# Log Group de Grafana
+resource "aws_cloudwatch_log_group" "grafana" {
+  name              = "/ecs/${aws_ecs_cluster.main.name}/grafana"
+  retention_in_days = 14
+}
+
+# Task Definition
+resource "aws_ecs_task_definition" "grafana" {
+  family                   = "grafana"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  cpu                      = "256"
+  memory                   = "512"
+
+  container_definitions = jsonencode([{
+    name  = "grafana"
+    image = "calehu/grafana:v1"
+
+    portMappings = [
+      { containerPort = 3000, protocol = "tcp" }
+    ]
+
+    environment = [
+      { name = "AWS_ACCESS_KEY_ID",     value = var.aws_access_key_id     },
+      { name = "AWS_SECRET_ACCESS_KEY", value = var.aws_secret_access_key },
+      { name = "AWS_SESSION_TOKEN",     value = var.aws_session_token    },
+      { name = "GF_SECURITY_ADMIN_USER",     value = "admin"     },
+      { name = "GF_SECURITY_ADMIN_PASSWORD", value = "Admin1234" }
+    ]
+
+    logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+        awslogs-group         = aws_cloudwatch_log_group.grafana.name
+        awslogs-region        = var.aws_region
+        awslogs-stream-prefix = "ecs"
+      }
+    }
+  }])
+}
+
+# Service
+resource "aws_ecs_service" "grafana" {
+  name            = "grafana"
+  cluster         = aws_ecs_cluster.main.id
+  task_definition = aws_ecs_task_definition.grafana.arn
+  desired_count   = 1
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    subnets          = aws_subnet.public[*].id
+    security_groups  = [aws_security_group.ecs_sg.id]
+    assign_public_ip = true
+  }
+
+ 
+  load_balancer {
+    target_group_arn = aws_lb_target_group.grafana_tg.arn
+    container_name   = "grafana"
+    container_port   = 3000
+  }
+  depends_on = [
+    aws_lb_listener.grafana_listener
+  ]
 }
