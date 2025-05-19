@@ -156,32 +156,6 @@ resource "aws_ecr_repository" "repos" {
 
 
 ######################################
-# 6.0) CloudWatch Log Groups
-######################################
-
-resource "aws_cloudwatch_log_group" "ecs_frontend" {
-  name              = "/ecs/${aws_ecs_cluster.main.name}/frontend"
-  retention_in_days = 14
-}
-resource "aws_cloudwatch_log_group" "ecs_kong" {
-  name              = "/ecs/${aws_ecs_cluster.main.name}/kong"
-  retention_in_days = 14
-}
-resource "aws_cloudwatch_log_group" "ecs_ms-logeo" {
-  name              = "/ecs/${aws_ecs_cluster.main.name}/ms-logeo"
-  retention_in_days = 14
-}
-resource "aws_cloudwatch_log_group" "ecs_ms-participantes" {
-  name              = "/ecs/${aws_ecs_cluster.main.name}/ms-participantes"
-  retention_in_days = 14
-}
-resource "aws_cloudwatch_log_group" "ecs_ms-votaciones" {
-  name              = "/ecs/${aws_ecs_cluster.main.name}/ms-votaciones"
-  retention_in_days = 14
-}
-
-
-######################################
 # 6) ECS Cluster
 ######################################
 resource "aws_ecs_cluster" "main" {
@@ -305,15 +279,6 @@ resource "aws_ecs_task_definition" "ms_logeo" {
       image        = "calehu/ms-logeo:latest"
       portMappings = [{ containerPort = 80, protocol = "tcp" }]
       environment  = local.common_env
-
-      logConfiguration = {
-      logDriver = "awslogs"
-      options = {
-          awslogs-group         = aws_cloudwatch_log_group.ecs_ms-logeo.name
-          awslogs-region        = var.aws_region
-          awslogs-stream-prefix = "ecs"
-        }
-      }
     }
   ])
 }
@@ -346,15 +311,6 @@ resource "aws_ecs_task_definition" "ms_participantes" {
       image        = "calehu/ms-participantes:latest"
       portMappings = [{ containerPort = 80, protocol = "tcp" }]
       environment  = local.common_env
-
-      logConfiguration = {
-      logDriver = "awslogs"
-      options = {
-          awslogs-group         = aws_cloudwatch_log_group.ecs_ms-participantes.name
-          awslogs-region        = var.aws_region
-          awslogs-stream-prefix = "ecs"
-        }
-      }
     }
   ])
 }
@@ -387,15 +343,6 @@ resource "aws_ecs_task_definition" "ms_votaciones" {
       image        = "calehu/ms-votaciones:latest"
       portMappings = [{ containerPort = 80, protocol = "tcp" }]
       environment  = local.common_env
-
-      logConfiguration = {
-      logDriver = "awslogs"
-      options = {
-          awslogs-group         = aws_cloudwatch_log_group.ecs_ms-votaciones.name
-          awslogs-region        = var.aws_region
-          awslogs-stream-prefix = "ecs"
-        }
-      }
     }
   ])
 }
@@ -427,15 +374,6 @@ resource "aws_ecs_task_definition" "kong" {
       name         = "kong"
       image        = "calehu/kong:latest"
       essential = true
-
-      logConfiguration = {
-      logDriver = "awslogs"
-      options = {
-          awslogs-group         = aws_cloudwatch_log_group.ecs_kong.name
-          awslogs-region        = var.aws_region
-          awslogs-stream-prefix = "ecs"
-        }
-      }
 
       portMappings = [
         { containerPort = 8000, protocol = "tcp" },
@@ -485,15 +423,6 @@ resource "aws_ecs_task_definition" "frontend" {
       name         = "frontend"
       image        = "calehu/frontend:v2.9"
       portMappings = [{ containerPort = 80, protocol = "tcp" }]
-
-      logConfiguration = {
-      logDriver = "awslogs"
-      options = {
-          awslogs-group         = aws_cloudwatch_log_group.ecs_frontend.name
-          awslogs-region        = var.aws_region
-          awslogs-stream-prefix = "ecs"
-        }
-      }
     }
   ])
 }
@@ -562,12 +491,6 @@ output "bastion_id" {
 # 11) Grafana en ECS (Fargate)
 ######################################
 
-# Log Group de Grafana
-resource "aws_cloudwatch_log_group" "grafana" {
-  name              = "/ecs/${aws_ecs_cluster.main.name}/grafana"
-  retention_in_days = 14
-}
-
 # Task Definition
 resource "aws_ecs_task_definition" "grafana" {
   family                   = "grafana"
@@ -591,15 +514,6 @@ resource "aws_ecs_task_definition" "grafana" {
       { name = "GF_SECURITY_ADMIN_USER",     value = "admin"     },
       { name = "GF_SECURITY_ADMIN_PASSWORD", value = "Admin1234" }
     ]
-
-    logConfiguration = {
-      logDriver = "awslogs"
-      options = {
-        awslogs-group         = aws_cloudwatch_log_group.grafana.name
-        awslogs-region        = var.aws_region
-        awslogs-stream-prefix = "ecs"
-      }
-    }
   }])
 }
 
