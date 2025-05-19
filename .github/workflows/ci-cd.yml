@@ -10,6 +10,12 @@ jobs:
     name: Plan & Apply Terraform
     runs-on: ubuntu-latest
 
+    # Para que terraform recoja automáticamente los TF_VAR_*
+    env:
+      TF_VAR_aws_access_key_id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+      TF_VAR_aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      TF_VAR_aws_session_token:     ${{ secrets.AWS_SESSION_TOKEN }}
+
     # <-- aquí le dices al runner dónde buscar los .tf
     defaults:
       run:

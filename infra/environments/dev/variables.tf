@@ -30,4 +30,18 @@ variable "services" {
   ]
 }
 
+variable "aws_access_key_id" {
+  description = "AWS Access Key ID para el contenedor de Grafana"
+  type        = string
+}
+
+variable "aws_secret_access_key" {
+  description = "AWS Secret Access Key para el contenedor de Grafana"
+  type        = string
+}
+
+variable "aws_session_token" {
+  description = "AWS Session Token para el contenedor de Grafana"
+  type        = string
+}
 
