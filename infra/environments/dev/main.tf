@@ -517,7 +517,7 @@ resource "aws_ecs_task_definition" "grafana" {
   }])
 }
 
-# Service
+# Service de grafana
 resource "aws_ecs_service" "grafana" {
   name            = "grafana"
   cluster         = aws_ecs_cluster.main.id
